@@ -15,7 +15,7 @@ struct User {
 /// GET请求案例
 #[utoipa::path(
     get,
-    path = "/users/{id}",
+    path = "/user/{id}",
     params(
         ("id" = i32, description = "Unique identifier of the User")
     ),

@@ -5,7 +5,13 @@ edition = "2024"
 
 [dependencies]
 actix-web = { workspace = true }
-utoipa  = { workspace = true }
-utoipa-swagger-ui ={ workspace = true }
-utoipa-actix-web = {workspace = true}
-serde = {workspace = true}
+utoipa = { workspace = true }
+utoipa-swagger-ui = { workspace = true }
+utoipa-actix-web = { workspace = true }
+serde = { workspace = true }
+
+log = { workspace = true }
+flexi_logger = { workspace = true }
+#slog = { workspace = true }
+#slog-async = { workspace = true }
+#slog-term = {workspace = true}
