@@ -6,10 +6,15 @@ edition = "2024"
 [workspace]
 resolver = "2"
 members = [
-    ".",
-    "common"
+    ".", "api", "common"
 ]
 
+[dependencies]
+api = { path = "api" }
+
 [workspace.dependencies]
-utoipa = "5.3.1"
+utoipa = { version = "5.3.1", features = ["actix_extras"] }
+utoipa-swagger-ui = { version = "9.0.0", features = ["actix-web"] }
+utoipa-actix-web = "0.1.2"
 serde = "1"
+actix-web = "4"
