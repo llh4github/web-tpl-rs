@@ -1,0 +1,15 @@
+[package]
+name = "web-tpl"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+resolver = "2"
+members = [
+    ".",
+    "common"
+]
+
+[workspace.dependencies]
+utoipa = "5.3.1"
+serde = "1"
