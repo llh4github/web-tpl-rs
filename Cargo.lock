@@ -257,6 +257,7 @@ name = "api"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "common",
  "flexi_logger",
  "log",
  "serde",
@@ -405,6 +406,7 @@ version = "0.1.0"
 dependencies = [
  "log",
  "serde",
+ "utoipa",
 ]
 
 [[package]]

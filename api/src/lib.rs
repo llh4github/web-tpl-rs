@@ -2,7 +2,7 @@ mod demo;
 
 use crate::demo::demo_apis;
 use actix_web::middleware::Logger;
-use actix_web::{App, HttpServer, Responder};
+use actix_web::{App, HttpServer};
 use log::error;
 use std::net::Ipv4Addr;
 use utoipa_actix_web::{scope, AppExt};
