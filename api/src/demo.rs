@@ -1,7 +1,7 @@
 use actix_web::dev::HttpServiceFactory;
 use actix_web::web::Json;
 use actix_web::{get, post, web};
-use common::RspWrapper;
+use common::Rsp;
 use utoipa_actix_web::service_config::ServiceConfig;
 
 #[derive(utoipa::ToSchema, serde::Serialize, serde::Deserialize)]
@@ -21,16 +21,16 @@ struct User {
     params(
         ("id" = i32, description = "Unique identifier of the User")
     ),
-    responses((status = OK, body = RspWrapper<User>)),
+    responses((status = OK, body = Rsp<User>)),
     tag = "Demo"
 )]
 #[get("/user/{id}")]
-async fn get_user(path: web::Path<(i32,)>) -> Json<RspWrapper<User>> {
+async fn get_user(path: web::Path<(i32,)>) -> Json<Rsp<User>> {
     let user = User {
         id: path.into_inner().0,
         name: "Tom".to_string(),
     };
-    Json(RspWrapper::ok(user))
+    Json(Rsp::ok(user))
 }
 /// 新增一个用户
 ///
@@ -40,13 +40,13 @@ async fn get_user(path: web::Path<(i32,)>) -> Json<RspWrapper<User>> {
     path = "/user",
     request_body = User,
     responses(
-        (status = 200, description = "User created successfully", body = RspWrapper<User>)
+        (status = 200, description = "User created successfully", body = Rsp<User>)
     ),
     tag = "Demo"
 )]
 #[post("/user")]
-async fn add_user(user: Json<User>) -> Json<RspWrapper<User>> {
-    let data = RspWrapper::ok(User {
+async fn add_user(user: Json<User>) -> Json<Rsp<User>> {
+    let data = Rsp::ok(User {
         id: user.id + 114,
         name: user.name.clone(),
     });
