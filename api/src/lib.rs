@@ -3,6 +3,7 @@ mod demo;
 use crate::demo::demo_apis;
 use actix_web::middleware::Logger;
 use actix_web::{App, HttpServer, Responder};
+use log::error;
 use std::net::Ipv4Addr;
 use utoipa_actix_web::{scope, AppExt};
 use utoipa_swagger_ui::SwaggerUi;
@@ -28,6 +29,6 @@ pub fn main() {
     let result = start();
 
     if let Some(err) = result.err() {
-        println!("Error: {err}");
+        error!("Error: {err}");
     }
 }
