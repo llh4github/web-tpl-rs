@@ -2,10 +2,9 @@ mod demo;
 
 use crate::demo::demo_apis;
 use actix_web::middleware::Logger;
-use actix_web::{App, HttpResponse, HttpServer, Responder, get};
+use actix_web::{App, HttpServer, Responder};
 use std::net::Ipv4Addr;
-use utoipa_actix_web::service_config::ServiceConfig;
-use utoipa_actix_web::{AppExt, scope};
+use utoipa_actix_web::{scope, AppExt};
 use utoipa_swagger_ui::SwaggerUi;
 
 
