@@ -42,4 +42,14 @@ impl<T> Rsp<T> {
             data: None,
         }
     }
+
+    /// 不带数据的错误响应
+    pub fn error_data(msg: String, code: String, data: T) -> Rsp<T> {
+        Rsp {
+            msg,
+            code,
+            success: false,
+            data: Some(data),
+        }
+    }
 }
