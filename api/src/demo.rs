@@ -1,22 +1,16 @@
-use crate::errors::{ApiRsp, BizError};
 use actix_web::dev::HttpServiceFactory;
 use actix_web::web::Json;
 use actix_web::{get, post, web, HttpResponse, ResponseError};
 use common::Rsp;
 use serde::Serialize;
 use thiserror::Error;
-use utoipa::gen::serde_json;
-use utoipa::gen::serde_json::json;
 use utoipa_actix_web::service_config::ServiceConfig;
-use validator::Validate;
-use validator_derive::Validate;
 
-#[derive(utoipa::ToSchema, serde::Serialize, serde::Deserialize, Validate)]
+#[derive(utoipa::ToSchema, serde::Serialize, serde::Deserialize)]
 struct User {
     /// ID
     id: i32,
     /// username
-    #[validate(length(min = 1))]
     name: String,
 }
 
@@ -53,17 +47,12 @@ async fn get_user(path: web::Path<(i32,)>) -> Json<Rsp<User>> {
     tag = "Demo"
 )]
 #[post("/user")]
-async fn add_user(user: Json<User>) -> ApiRsp {
-    if let Err(e) = user.validate() {
-        let errs :serde_json::Value = json!(e);
-        let r = Rsp::error_data("e".to_string(), "e2".to_string(), errs);
-        return Err(BizError::QueryError);
-    }
+async fn add_user(user: Json<User>) -> Json<Rsp<User>> {
     let data = Rsp::ok(User {
         id: user.id + 114,
         name: user.name.clone(),
     });
-    Ok(Json(data))
+    Json(data)
 }
 pub(crate) fn demo_apis(c: &mut ServiceConfig) {
     c.service(get_user);

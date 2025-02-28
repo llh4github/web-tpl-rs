@@ -1,8 +1,8 @@
 use serde::Serialize;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use utoipa::gen::serde_json;
-use utoipa::gen::serde_json::Value;
+use utoipa::r#gen::serde_json;
+use utoipa::r#gen::serde_json::Value;
 use validator::ValidationErrors;
 
 #[derive(Serialize)]
