@@ -8,6 +8,7 @@ use validator_derive::Validate;
 
 #[derive(Deserialize, Serialize, Debug, ToSchema, Validate)]
 pub struct Student {
+    #[validate(range(min = 0))]
     id: i32,
     /// 0-100 超过就会报错
     #[validate(range(min = 0, max = 100))]

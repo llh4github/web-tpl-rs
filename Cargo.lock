@@ -261,6 +261,7 @@ dependencies = [
  "flexi_logger",
  "log",
  "serde",
+ "serde_json",
  "thiserror",
  "utoipa",
  "utoipa-actix-web",
@@ -409,6 +410,7 @@ version = "0.1.0"
 dependencies = [
  "log",
  "serde",
+ "thiserror",
  "utoipa",
 ]
 

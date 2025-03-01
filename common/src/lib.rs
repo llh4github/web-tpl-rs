@@ -1,3 +1,5 @@
+mod demo01;
+
 use std::string::ToString;
 
 const OK: &str = "OK";
