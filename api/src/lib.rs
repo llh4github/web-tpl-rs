@@ -1,6 +1,6 @@
-mod demo;
+pub(crate) mod rsp;
+mod endpoint;
 
-use crate::demo::demo_apis;
 use actix_web::middleware::Logger;
 use actix_web::{App, HttpServer};
 use log::error;
@@ -15,7 +15,7 @@ async fn start() -> std::io::Result<()> {
             .into_utoipa_app()
             .map(|app| app.wrap(Logger::default()))
             .service(scope::scope("/api").configure(|cfg| {
-                demo_apis(cfg);
+                endpoint::apis(cfg);
             }))
             .split_for_parts();
         app.service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", api))
