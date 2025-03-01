@@ -2,4 +2,5 @@ target/
 .idea
 .log
 .vscode/
+local.*
 
