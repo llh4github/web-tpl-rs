@@ -37,7 +37,7 @@ EXPOSE 8080
 WORKDIR /app
 
 # 从 builder 镜像中拷贝构建好的二进制文件
-COPY --from=builder /workspace/target/release/web-tpl /app/web-tpl
+COPY --from=builder /workspace/target/release/web-tpl /app/web-api-bin
 
 # 启动应用
-CMD ["./web-tpl"]
+CMD ["./web-api-bin"]
