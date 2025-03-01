@@ -1,4 +1,4 @@
-use crate::rsp::{ApiError, ApiResponse};
+use crate::rsp::{ok_rsp, ApiResponse, ApiResult};
 use actix_web::web::Json;
 use actix_web::{get, post, web};
 use serde::{Deserialize, Serialize};
@@ -27,11 +27,11 @@ pub struct Student {
     tag = "Demo01"
 )]
 #[get("/demo01/student/{id}")]
-async fn get_student(path: web::Path<(i32,)>) -> Result<ApiResponse<Student>, ApiError> {
-    Ok(ApiResponse::success(Student {
+async fn get_student(path: web::Path<(i32,)>) -> ApiResult<Student> {
+    ok_rsp(Student {
         id: path.0 + 114514,
         age: path.0,
-    }))
+    })
 }
 /// 新增数据
 ///
@@ -46,10 +46,7 @@ async fn get_student(path: web::Path<(i32,)>) -> Result<ApiResponse<Student>, Ap
     tag = "Demo01"
 )]
 #[post("/demo01/student")]
-async fn add_student(student: Json<Student>) -> Result<ApiResponse<Student>, ApiError> {
+async fn add_student(student: Json<Student>) -> ApiResult<Student> {
     student.validate()?;
-    Ok(ApiResponse::success(Student {
-        id: student.id + 114514,
-        age: student.age,
-    }))
+    ok_rsp(student.into_inner())
 }
