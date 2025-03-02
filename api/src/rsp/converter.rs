@@ -1,5 +1,7 @@
 use crate::rsp::types::{ErrorDetail, FieldError};
 use crate::rsp::ApiResponse;
+use log::debug;
+use sea_orm::DbErr;
 use serde_json::{json, Value};
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -38,6 +40,21 @@ impl From<ValidationErrors> for ApiResponse<Value> {
         }
     }
 }
+
+impl From<DbErr> for ApiResponse<Value> {
+    fn from(errors: DbErr) -> Self {
+        errors.to_string();
+
+        debug!("DbErr: {:?}", errors);
+        ApiResponse {
+            code: "DbErr".to_string(),
+            msg: "DbErr".to_string(),
+            success: false,
+            data: Value::String(errors.to_string()),
+        }
+    }
+}
+
 impl From<&ValidationErrors> for ApiResponse<Value> {
     fn from(errors: &ValidationErrors) -> Self {
         let errors_json = convert_validation_errors(errors);

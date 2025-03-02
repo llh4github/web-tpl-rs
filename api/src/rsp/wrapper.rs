@@ -63,12 +63,17 @@ impl ResponseError for ApiResponse<Value> {
     }
 }
 
+#[deprecated(since = "0.1.0", note = "Use ApiResponse instead")]
 #[derive(Serialize, Debug, Error)]
 pub enum ApiErrors<'a> {
     #[error("CommonError: {code} {msg}")]
-    CommonError { code: &'a str, msg: &'a str },
+    CommonError {
+        code: &'a str,
+        msg: &'a str,
+    },
     #[error("ValidationError: {0}")]
     ValidationError(#[from] ValidationErrors),
+    // DbError(#[from] DbErr),
 }
 impl<'a> From<ApiErrors<'a>> for ApiResponse<Value> {
     fn from(value: ApiErrors<'a>) -> Self {
@@ -88,6 +93,12 @@ impl<'a> From<ApiErrors<'a>> for ApiResponse<Value> {
                     data: errors_json,
                 }
             }
+            // ApiErrors::DbError(_) => ApiResponse {
+            //     code: "DbError".to_string(),
+            //     msg: "DbError".to_string(),
+            //     success: false,
+            //     data: Value::Null,
+            // },
         }
     }
 }

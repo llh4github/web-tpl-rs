@@ -4,4 +4,9 @@ debug = true
 host = "localhost"
 port = 8080
 prefix = "/api"
-
+[database]
+username = "postgres"
+password = "postgres"
+database = "web_tpl"
+host = "localhost"
+port = 5432
