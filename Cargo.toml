@@ -14,7 +14,7 @@ api = { path = "api" }
 common = { path = "common" }
 
 [package.metadata.packager]
-files = ["config/default.toml"]
+files = ["config/application.toml"]
 
 [workspace.dependencies]
 thiserror = "2.0.11"
