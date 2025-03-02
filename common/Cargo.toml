@@ -7,3 +7,4 @@ edition = "2024"
 serde = { workspace = true }
 utoipa = { workspace = true }
 log = { workspace = true }
+config = { workspace = true }

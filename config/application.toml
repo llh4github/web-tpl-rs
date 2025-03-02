@@ -1,0 +1,7 @@
+debug = true
+
+[network]
+host = "localhost"
+port = 8080
+prefix = "/api"
+
