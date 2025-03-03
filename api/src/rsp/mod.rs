@@ -4,6 +4,7 @@ mod wrapper;
 
 use common::OK_STR;
 use serde::Serialize;
+pub use types::PageResult;
 pub use wrapper::ApiErrors;
 pub use wrapper::ApiResponse;
 pub use wrapper::ApiResult;

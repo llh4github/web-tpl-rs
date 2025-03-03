@@ -1,14 +1,15 @@
 use crate::global::AppResources;
 use crate::rsp::ApiErrors::CommonError;
-use crate::rsp::{ok_rsp, ApiResponse};
+use crate::rsp::{ok_rsp, ApiResponse, PageResult};
 use crate::{dto, rsp};
 use actix_web::{get, post, web};
 use db::entities::auth_user;
 use db::entities::prelude::AuthUser;
+use sea_orm::sea_query::SimpleExpr;
 use sea_orm::ActiveValue::Set;
-use sea_orm::ColumnTrait;
-use sea_orm::QueryFilter;
 use sea_orm::{ActiveModelTrait, Condition, EntityTrait, TransactionTrait};
+use sea_orm::{ColumnTrait, QueryOrder};
+use sea_orm::{PaginatorTrait, QueryFilter};
 use validator::Validate;
 
 /// 根据 ID 查找数据
@@ -68,7 +69,7 @@ pub async fn add_user(
             code: "1001",
             msg: "邮箱已存在",
         }
-            .into());
+        .into());
     }
 
     let x = auth_user::ActiveModel {
@@ -80,4 +81,40 @@ pub async fn add_user(
     let s = AuthUser::insert(x).exec_with_returning(&txn).await?;
     txn.commit().await?;
     ok_rsp(Some(s))
+}
+
+/// 分页查询
+#[utoipa::path(
+    post,
+    path = "/user/page",
+    request_body = dto::user::PageReq,
+    responses((status = OK, body = ApiResponse<PageResult<auth_user::Model>>)),
+    tag = "用户管理模块"
+)]
+#[post("/user/page")]
+pub async fn page_query(
+    req: web::Json<dto::user::PageReq>,
+    data: web::Data<AppResources>,
+) -> rsp::ApiResult<PageResult<auth_user::Model>> {
+    let db = &data.db;
+    let cond = Condition::all()
+        .add_option(req.username.as_ref().map_or(None::<SimpleExpr>, |v| {
+            Some(auth_user::Column::Username.contains(v.clone()))
+        }))
+        .add_option(req.email.as_ref().map_or(None::<SimpleExpr>, |v| {
+            Some(auth_user::Column::Email.contains(v.clone()))
+        }));
+    let query = AuthUser::find()
+        .filter(cond)
+        .order_by_desc(auth_user::Column::UpdatedAt);
+    let paginator = query.paginate(db, req.size);
+    let total_page = paginator.num_pages().await?;
+    let total_ele = paginator.num_items().await?;
+    let list: Vec<auth_user::Model> = paginator.fetch_page(req.page - 1).await?;
+    let rs = PageResult {
+        total_page,
+        total_ele,
+        data: list,
+    };
+    ok_rsp(rs)
 }

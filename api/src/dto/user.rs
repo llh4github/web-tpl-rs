@@ -13,14 +13,18 @@ pub struct AddReq {
     pub email: String,
 }
 /// User Page Request Dto
-#[derive(Deserialize, Serialize, Debug, ToSchema)]
+#[derive(Deserialize, Serialize, Debug, ToSchema, Validate)]
 pub struct PageReq {
     /// 用户名
-    pub username: String,
+    pub username: Option<String>,
     /// 邮箱
-    pub email: String,
+    pub email: Option<String>,
     /// 页码
-    pub page: i32,
+    #[validate(range(min = 1))]
+    #[schema(example = 1)]
+    pub page: u64,
     /// 每页大小
-    pub size: i32,
+    #[validate(range(min = 1))]
+    #[schema(example = 10)]
+    pub size: u64,
 }
