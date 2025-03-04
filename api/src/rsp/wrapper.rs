@@ -35,11 +35,11 @@ impl<T: Serialize> ApiResponse<T> {
         }
     }
 }
-impl ApiResponse<EmptyData> {
+impl ApiResponse<Value> {
     // 错误响应构造函数
     pub fn error(code: impl Into<String>, msg: impl Into<String>) -> Self {
         Self {
-            data: EmptyData,
+            data: Value::Null,
             code: code.into(),
             msg: msg.into(),
             success: false,

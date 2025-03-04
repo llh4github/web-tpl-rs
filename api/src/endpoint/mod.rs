@@ -9,4 +9,5 @@ pub(crate) fn apis(c: &mut ServiceConfig) {
     c.service(user::find_user);
     c.service(user::add_user);
     c.service(user::page_query);
+    c.service(user::update_pwd);
 }

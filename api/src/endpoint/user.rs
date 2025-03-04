@@ -1,13 +1,14 @@
 use crate::global::AppResources;
 use crate::rsp::ApiErrors::CommonError;
-use crate::rsp::{ok_rsp, ApiResponse, PageResult};
+use crate::rsp::{ok_rsp, ApiResponse, ApiResult, PageResult};
 use crate::{dto, rsp};
 use actix_web::{get, post, web};
 use db::entities::auth_user;
 use db::entities::prelude::AuthUser;
 use sea_orm::sea_query::SimpleExpr;
+use sea_orm::sqlx::types::chrono;
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, Condition, EntityTrait, TransactionTrait};
+use sea_orm::{ActiveModelTrait, Condition, EntityTrait, IntoActiveModel, TransactionTrait};
 use sea_orm::{ColumnTrait, QueryOrder};
 use sea_orm::{PaginatorTrait, QueryFilter};
 use validator::Validate;
@@ -117,4 +118,33 @@ pub async fn page_query(
         data: list,
     };
     ok_rsp(rs)
+}
+/// 更新用户密码
+#[utoipa::path(
+    post,
+    path = "/user/update/pwd",
+    request_body = dto::user::UpdatePwd,
+    responses((status = OK, body = ApiResponse<bool>)),
+    tag = "用户管理模块"
+)]
+#[post("/user/update/pwd")]
+pub async fn update_pwd(
+    req: web::Json<dto::user::UpdatePwd>,
+    data: web::Data<AppResources>,
+) -> ApiResult<bool> {
+    let db = &data.db;
+    let txn = db.begin().await?;
+    let option: Option<auth_user::Model> = AuthUser::find_by_id(req.id).one(&txn).await?;
+    match option {
+        None => Err(ApiResponse::error("DataNotFound", "Data not found")),
+        Some(m) => {
+            let mut data_db = m.into_active_model();
+            data_db.password =
+                Set(bcrypt::hash(req.password.clone(), bcrypt::DEFAULT_COST).unwrap());
+            data_db.updated_at = Set(Some(chrono::Local::now().naive_local()));
+            data_db.update(&txn).await?;
+            txn.commit().await?;
+            ok_rsp(true)
+        }
+    }
 }
