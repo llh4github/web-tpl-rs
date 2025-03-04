@@ -136,7 +136,10 @@ pub async fn update_pwd(
     let txn = db.begin().await?;
     let option: Option<auth_user::Model> = AuthUser::find_by_id(req.id).one(&txn).await?;
     match option {
-        None => Err(ApiResponse::error("DataNotFound", "Data not found")),
+        None => {
+            txn.commit().await?;
+            Err(ApiResponse::error("DataNotFound", "Data not found"))
+        },
         Some(m) => {
             let mut data_db = m.into_active_model();
             data_db.password =
