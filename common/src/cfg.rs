@@ -14,9 +14,27 @@ pub struct ApiNetwork {
 pub struct Settings {
     pub debug: bool,
     pub network: ApiNetwork,
-    // pub database: Database,
+    pub database: Database,
     // pub redis: Redis,
 }
+#[derive(Debug, Deserialize)]
+#[allow(unused)]
+pub struct Database {
+    pub username: String,
+    pub password: String,
+    pub host: String,
+    pub port: i32,
+    pub database: String,
+}
+impl Database {
+    pub fn connection_string(&self) -> String {
+        format!(
+            "postgres://{}:{}@{}:{}/{}",
+            self.username, self.password, self.host, self.port, self.database
+        )
+    }
+}
+
 impl Settings {
     pub fn new() -> Result<Self, ConfigError> {
         // 从环境变量中获取运行模式

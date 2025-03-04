@@ -21,4 +21,12 @@ pub struct ErrorDetail {
     pub params: Option<Value>,
 }
 
-
+#[derive(Serialize, Debug, ToSchema)]
+pub struct PageResult<T: Serialize> {
+    /// 总页数
+    pub total_page: u64,
+    /// 总记录数
+    pub total_ele: u64,
+    /// 当前页数据
+    pub data: Vec<T>,
+}
