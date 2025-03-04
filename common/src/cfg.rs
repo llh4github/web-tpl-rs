@@ -56,20 +56,3 @@ impl Settings {
         config.build()?.try_deserialize()
     }
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn t1() {
-        let a = Settings::new();
-        match a {
-            Ok(s) => {
-                println!("{:?}", s);
-            }
-            Err(e) => {
-                println!("{:?}", e);
-            }
-        }
-    }
-}
