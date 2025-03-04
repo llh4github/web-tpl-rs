@@ -31,9 +31,8 @@ pub struct PageReq {
 /// User Update Request Dto
 #[derive(Deserialize, Serialize, Debug, ToSchema, Validate)]
 pub struct UpdatePwd {
-
     #[validate(range(min = 1))]
-    pub id:i32,
+    pub id: i32,
 
     #[validate(length(min = 1, max = 20))]
     pub password: String,
