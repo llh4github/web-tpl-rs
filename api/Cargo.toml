@@ -9,6 +9,7 @@ db = { path = "../db" }
 sea-orm = {workspace = true}
 
 thiserror = { workspace = true }
+jsonwebtoken = { workspace = true }
 
 actix-web = { workspace = true }
 utoipa = { workspace = true }

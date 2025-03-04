@@ -2,6 +2,8 @@ mod endpoint;
 pub(crate) mod global;
 pub(crate) mod rsp;
 pub(crate) mod dto;
+mod util;
+mod middleware;
 
 use crate::global::AppResources;
 use actix_web::middleware::Logger;

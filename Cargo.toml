@@ -41,3 +41,4 @@ sea-orm = { version = "1.1.6", features = [
 
 bcrypt = "0.17"
 
+jsonwebtoken = "9.3.1"
