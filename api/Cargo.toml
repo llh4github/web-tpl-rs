@@ -6,7 +6,8 @@ edition = "2024"
 [dependencies]
 common = { path = "../common" }
 db = { path = "../db" }
-sea-orm = {workspace = true}
+redis = { workspace = true }
+sea-orm = { workspace = true }
 
 thiserror = { workspace = true }
 jsonwebtoken = { workspace = true }
