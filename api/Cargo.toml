@@ -19,6 +19,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 validator = { workspace = true }
 validator_derive = { workspace = true }
+r2d2 = { workspace = true }
 
 bcrypt = { workspace = true }
 log = { workspace = true }
