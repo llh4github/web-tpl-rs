@@ -1,8 +1,9 @@
-use crate::rsp::types::{ErrorDetail, FieldError};
 use crate::rsp::ApiResponse;
+use crate::rsp::types::{ErrorDetail, FieldError};
 use log::debug;
+use redis::RedisError;
 use sea_orm::DbErr;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use validator::ValidationErrors;
@@ -63,6 +64,28 @@ impl From<&ValidationErrors> for ApiResponse<Value> {
             msg: "ValidationErrors".to_string(),
             success: false,
             data: errors_json,
+        }
+    }
+}
+
+impl From<r2d2::Error> for ApiResponse<Value> {
+    fn from(errors: r2d2::Error) -> Self {
+        ApiResponse {
+            code: "PoolError".to_string(),
+            msg: "ObjectPoolErr".to_string(),
+            success: false,
+            data: Value::String(errors.to_string()),
+        }
+    }
+}
+
+impl From<RedisError> for ApiResponse<Value> {
+    fn from(errors: RedisError) -> Self {
+        ApiResponse {
+            code: "CacheErr".to_string(),
+            msg: "RedisErr".to_string(),
+            success: false,
+            data: Value::String(errors.to_string()),
         }
     }
 }
