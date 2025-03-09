@@ -5,6 +5,7 @@ use crate::{dto, rsp};
 use actix_web::{get, post, web};
 use db::entities::auth_user;
 use db::entities::prelude::AuthUser;
+use redis::Commands;
 use sea_orm::sea_query::SimpleExpr;
 use sea_orm::sqlx::types::chrono;
 use sea_orm::ActiveValue::Set;
@@ -27,7 +28,13 @@ use validator::Validate;
 pub async fn find_user(
     id: web::Path<i32>,
     data: web::Data<AppResources>,
-) -> rsp::ApiResult<Option<auth_user::Model>> {
+) -> ApiResult<Option<auth_user::Model>> {
+    let mut pool = data.redis_pool.get()?;
+    redis::cmd("SET")
+        .arg("set")
+        .arg("test-from-actix-web")
+        .query::<()>(&mut pool)?;
+
     let db = &data.db;
     let option: Option<auth_user::Model> = AuthUser::find_by_id(id.into_inner()).one(db).await?;
     ok_rsp(option)
@@ -44,7 +51,7 @@ pub async fn find_user(
 pub async fn add_user(
     req: web::Json<dto::user::AddReq>,
     data: web::Data<AppResources>,
-) -> rsp::ApiResult<Option<auth_user::Model>> {
+) -> ApiResult<Option<auth_user::Model>> {
     req.validate()?;
     let txn = data.db.begin().await?;
     let option: Option<auth_user::Model> = AuthUser::find()
@@ -139,7 +146,7 @@ pub async fn update_pwd(
         None => {
             txn.commit().await?;
             Err(ApiResponse::error("DataNotFound", "Data not found"))
-        },
+        }
         Some(m) => {
             let mut data_db = m.into_active_model();
             data_db.password =

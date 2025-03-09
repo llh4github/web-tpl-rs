@@ -38,7 +38,8 @@ sea-orm = { version = "1.1.6", features = [
     "sqlx-postgres", "runtime-tokio-native-tls",
     "macros", "postgres-array", "with-json",
 ] }
-redis = { version = "0.29", features = ["cluster-async", "r2d2", "tokio-comp"] }
+redis = { version = "0.29", features = ["cluster-async", "cluster", "r2d2", "tokio-comp"] }
+
 r2d2 = { version = "0.8.10" }
 bcrypt = "0.17"
 

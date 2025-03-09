@@ -8,3 +8,4 @@ serde = { workspace = true }
 utoipa = { workspace = true }
 log = { workspace = true }
 config = { workspace = true }
+r2d2 = { workspace = true }

@@ -10,3 +10,7 @@ password = "postgres"
 database = "web_tpl"
 host = "localhost"
 port = 5432
+
+[redis]
+type = "Standalone"
+node = "redis://localhost:6379"

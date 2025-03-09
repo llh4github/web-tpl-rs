@@ -281,6 +281,7 @@ version = "0.1.0"
 dependencies = [
  "actix-web",
  "bcrypt",
+    "cache",
  "common",
  "db",
  "flexi_logger",
