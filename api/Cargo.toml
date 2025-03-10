@@ -6,9 +6,12 @@ edition = "2024"
 [dependencies]
 common = { path = "../common" }
 db = { path = "../db" }
-sea-orm = {workspace = true}
+cache = { path = "../cache" }
+redis = { workspace = true }
+sea-orm = { workspace = true }
 
 thiserror = { workspace = true }
+jsonwebtoken = { workspace = true }
 
 actix-web = { workspace = true }
 utoipa = { workspace = true }
@@ -18,6 +21,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 validator = { workspace = true }
 validator_derive = { workspace = true }
+r2d2 = { workspace = true }
 
 bcrypt = { workspace = true }
 log = { workspace = true }

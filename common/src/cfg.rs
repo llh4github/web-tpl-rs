@@ -3,6 +3,21 @@ use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 use std::env;
 
+/// URL format: `{redis|rediss}://[<username>][:<password>@]<hostname>[:port][/<db>]`
+///
+/// - Basic: `redis://127.0.0.1:6379`
+/// - Username & Password: `redis://user:password@127.0.0.1:6379`
+/// - Password only: `redis://:password@127.0.0.1:6379`
+/// - Specifying DB: `redis://127.0.0.1:6379/0`
+/// - Enabling TLS: `rediss://127.0.0.1:6379`
+/// - Enabling Insecure TLS: `rediss://127.0.0.1:6379/#insecure`
+/// - Enabling RESP3: `redis://127.0.0.1:6379/?protocol=resp3`
+#[derive(Debug, Deserialize, Clone)]
+#[serde(tag = "type")] // 使用 "type" 字段确定枚举变体
+pub enum RedisMode {
+    Standalone { node: String },
+    Cluster { nodes: Vec<String> },
+}
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub struct ApiNetwork {
@@ -15,7 +30,7 @@ pub struct Settings {
     pub debug: bool,
     pub network: ApiNetwork,
     pub database: Database,
-    // pub redis: Redis,
+    pub redis: RedisMode,
 }
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
@@ -54,22 +69,5 @@ impl Settings {
             config
         };
         config.build()?.try_deserialize()
-    }
-}
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn t1() {
-        let a = Settings::new();
-        match a {
-            Ok(s) => {
-                println!("{:?}", s);
-            }
-            Err(e) => {
-                println!("{:?}", e);
-            }
-        }
     }
 }

@@ -5,13 +5,18 @@ use crate::{dto, rsp};
 use actix_web::{get, post, web};
 use db::entities::auth_user;
 use db::entities::prelude::AuthUser;
+use log::{debug, info};
+use redis::Commands;
 use sea_orm::sea_query::SimpleExpr;
 use sea_orm::sqlx::types::chrono;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, Condition, EntityTrait, IntoActiveModel, TransactionTrait};
 use sea_orm::{ColumnTrait, QueryOrder};
 use sea_orm::{PaginatorTrait, QueryFilter};
+use serde_json::json;
 use validator::Validate;
+
+const REDIS_KEY: &str = "web-tpl:cache:user";
 
 /// 根据 ID 查找数据
 #[utoipa::path(
@@ -27,9 +32,28 @@ use validator::Validate;
 pub async fn find_user(
     id: web::Path<i32>,
     data: web::Data<AppResources>,
-) -> rsp::ApiResult<Option<auth_user::Model>> {
+) -> ApiResult<Option<auth_user::Model>> {
+    let mut pool = data.redis_pool.get()?;
+    let cached: Option<String> = redis::cmd("GET")
+        .arg(format!("{}:{}", REDIS_KEY, *id))
+        .query(&mut pool)?;
+    if let Some(cached) = cached {
+        debug!("Cache found. user-id {}", *id);
+        let cached: Option<auth_user::Model> = serde_json::from_str(&cached).unwrap();
+        return ok_rsp(cached);
+    } else {
+        debug!("Cache not found, run db query. user-id {}", *id);
+    }
+
     let db = &data.db;
-    let option: Option<auth_user::Model> = AuthUser::find_by_id(id.into_inner()).one(db).await?;
+    let option: Option<auth_user::Model> = AuthUser::find_by_id(*id).one(db).await?;
+    redis::cmd("SET")
+        .arg(format!("{}:{}", REDIS_KEY, *id))
+        .arg(json!(option).to_string())
+        .arg("EX")
+        .arg(60 * 60)
+        .exec(&mut pool)?;
+
     ok_rsp(option)
 }
 /// 新增用户数据
@@ -44,7 +68,7 @@ pub async fn find_user(
 pub async fn add_user(
     req: web::Json<dto::user::AddReq>,
     data: web::Data<AppResources>,
-) -> rsp::ApiResult<Option<auth_user::Model>> {
+) -> ApiResult<Option<auth_user::Model>> {
     req.validate()?;
     let txn = data.db.begin().await?;
     let option: Option<auth_user::Model> = AuthUser::find()
@@ -139,7 +163,7 @@ pub async fn update_pwd(
         None => {
             txn.commit().await?;
             Err(ApiResponse::error("DataNotFound", "Data not found"))
-        },
+        }
         Some(m) => {
             let mut data_db = m.into_active_model();
             data_db.password =

@@ -1,24 +1,34 @@
+pub(crate) mod dto;
 mod endpoint;
 pub(crate) mod global;
+mod middleware;
 pub(crate) mod rsp;
-pub(crate) mod dto;
+mod util;
 
 use crate::global::AppResources;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
-use common::cfg::{ApiNetwork, Settings};
-use log::error;
+use cache::create_redis_pool;
+use common::cfg::Settings;
+use flexi_logger::{
+    Age, Cleanup, Criterion, Duplicate, FileSpec, FlexiLoggerError, LevelFilter, Naming,
+};
+use log::{error, info};
+use std::error::Error;
 use std::net::Ipv4Addr;
 use utoipa_actix_web::{scope, AppExt};
 use utoipa_swagger_ui::SwaggerUi;
-
 #[actix_web::main]
-async fn start(cfg: Settings) -> std::io::Result<()> {
-    let network = cfg.network;
+async fn start(cfg: Settings) -> Result<(), Box<dyn Error>> {
     let debug = cfg.debug;
-    let db_conn = db::db_connection(cfg.database, debug).await.unwrap();
-    let resources = AppResources { db: db_conn };
+    let db_conn = db::db_connection(cfg.database, debug).await?;
+    let redis_pool = create_redis_pool(cfg.redis)?;
+    let resources = AppResources {
+        db: db_conn,
+        redis_pool,
+    };
 
+    let network = cfg.network;
     let server = HttpServer::new(move || {
         let (app, api) = App::new()
             .into_utoipa_app()
@@ -34,13 +44,25 @@ async fn start(cfg: Settings) -> std::io::Result<()> {
     server.run().await?;
     Ok(())
 }
+
 pub fn main(cfg: Settings) {
-    let _fx_log = flexi_logger::Logger::try_with_env_or_str("debug")
+    flexi_logger::Logger::try_with_env_or_str("debug")
         .unwrap()
+        .rotate(
+            Criterion::Age(Age::Day),
+            Naming::TimestampsCustomFormat {
+                current_infix: None,
+                format: "%Y%m%d",
+            },
+            Cleanup::KeepLogFiles(7),
+        )
+        .log_to_file(FileSpec::default().directory("logs").basename("web-tpl"))
+        .duplicate_to_stdout(Duplicate::All)
         .start()
         .expect("flexi_logger error");
-    let result = start(cfg);
 
+    info!("Starting server ...");
+    let result = start(cfg);
     if let Some(err) = result.err() {
         error!("Error: {err}");
     }
