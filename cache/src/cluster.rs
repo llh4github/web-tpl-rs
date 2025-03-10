@@ -1,3 +1,9 @@
+use crate::RedisConnectionManager;
+use common::cfg::RedisMode;
+use r2d2::ManageConnection;
+use redis::cluster::ClusterClient;
+use redis::{cluster, ConnectionLike, RedisError};
+
 #[cfg(feature = "cluster")]
 impl ManageConnection for RedisConnectionManager {
     type Connection = cluster::ClusterConnection;
