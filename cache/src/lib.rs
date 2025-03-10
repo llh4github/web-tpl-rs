@@ -29,3 +29,6 @@ impl fmt::Debug for RedisConnectionManager {
         write!(f, "RedisConnectionManager")
     }
 }
+
+#[cfg(all(feature = "standalone", feature = "cluster"))]
+compile_error!("feature_a 和 feature_b 是互斥的，不能同时启用！");
