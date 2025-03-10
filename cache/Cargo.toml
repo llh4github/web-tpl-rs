@@ -4,9 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["standalone"]
 standalone = []
-cluster = ["redis/cluster"]
+cluster = []
 
 [dependencies]
 common = { path = "../common" }
@@ -14,3 +13,4 @@ redis = { workspace = true }
 r2d2 = { workspace = true }
 
 serde = { workspace = true }
+log = { workspace = true }
