@@ -12,6 +12,7 @@ members = [
 [dependencies]
 api = { path = "api" }
 common = { path = "common" }
+cache = { path = "cache" }
 
 [package.metadata.packager]
 files = ["config/application.toml"]
