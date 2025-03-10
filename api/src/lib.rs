@@ -10,12 +10,14 @@ use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 use cache::create_redis_pool;
 use common::cfg::Settings;
-use log::error;
+use flexi_logger::{
+    Age, Cleanup, Criterion, Duplicate, FileSpec, FlexiLoggerError, LevelFilter, Naming,
+};
+use log::{error, info};
 use std::error::Error;
 use std::net::Ipv4Addr;
 use utoipa_actix_web::{scope, AppExt};
 use utoipa_swagger_ui::SwaggerUi;
-
 #[actix_web::main]
 async fn start(cfg: Settings) -> Result<(), Box<dyn Error>> {
     let debug = cfg.debug;
@@ -44,12 +46,23 @@ async fn start(cfg: Settings) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn main(cfg: Settings) {
-    let _fx_log = flexi_logger::Logger::try_with_env_or_str("debug")
+    flexi_logger::Logger::try_with_env_or_str("debug")
         .unwrap()
+        .rotate(
+            Criterion::Age(Age::Day),
+            Naming::TimestampsCustomFormat {
+                current_infix: None,
+                format: "%Y%m%d",
+            },
+            Cleanup::KeepLogFiles(7),
+        )
+        .log_to_file(FileSpec::default().directory("logs").basename("web-tpl"))
+        .duplicate_to_stdout(Duplicate::All)
         .start()
         .expect("flexi_logger error");
-    let result = start(cfg);
 
+    info!("Starting server ...");
+    let result = start(cfg);
     if let Some(err) = result.err() {
         error!("Error: {err}");
     }
