@@ -18,6 +18,7 @@ cache = { path = "cache" }
 files = ["config/application.toml"]
 
 [workspace.dependencies]
+anyhow = "1.0"
 thiserror = "2.0.11"
 utoipa = { version = "5.3.1", features = ["actix_extras", "chrono"] }
 utoipa-swagger-ui = { version = "9.0.0", features = ["actix-web", "vendored"] }

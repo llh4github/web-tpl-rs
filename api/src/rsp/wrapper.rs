@@ -1,6 +1,6 @@
 use crate::rsp::converter::convert_validation_errors;
-use actix_web::http::header::TryIntoHeaderValue;
 use actix_web::http::StatusCode;
+use actix_web::http::header::TryIntoHeaderValue;
 use actix_web::{HttpRequest, HttpResponse, Responder, ResponseError};
 use common::{OK_STR, SUCCESS_STR};
 use serde::Serialize;
@@ -10,8 +10,11 @@ use thiserror::Error;
 use utoipa::ToSchema;
 use validator::ValidationErrors;
 
+use super::errors::MyError;
+
 /// ApiResult 接口统一响应结果
 pub type ApiResult<T> = Result<ApiResponse<T>, ApiResponse<Value>>;
+pub type ApiResult2<T> = Result<ApiResponse<T>, MyError>;
 
 #[derive(Serialize, ToSchema)]
 pub struct EmptyData;
@@ -67,10 +70,7 @@ impl ResponseError for ApiResponse<Value> {
 #[derive(Serialize, Debug, Error)]
 pub enum ApiErrors<'a> {
     #[error("CommonError: {code} {msg}")]
-    CommonError {
-        code: &'a str,
-        msg: &'a str,
-    },
+    CommonError { code: &'a str, msg: &'a str },
     #[error("ValidationError: {0}")]
     ValidationError(#[from] ValidationErrors),
     // DbError(#[from] DbErr),
@@ -92,13 +92,12 @@ impl<'a> From<ApiErrors<'a>> for ApiResponse<Value> {
                     success: false,
                     data: errors_json,
                 }
-            }
-            // ApiErrors::DbError(_) => ApiResponse {
-            //     code: "DbError".to_string(),
-            //     msg: "DbError".to_string(),
-            //     success: false,
-            //     data: Value::Null,
-            // },
+            } // ApiErrors::DbError(_) => ApiResponse {
+              //     code: "DbError".to_string(),
+              //     msg: "DbError".to_string(),
+              //     success: false,
+              //     data: Value::Null,
+              // },
         }
     }
 }
