@@ -1,9 +1,12 @@
-/// 接口响应错误码类型
-pub type ErrorCode = &str;
+//! #[allow(dead_code)]
 
-pub const DB_ERR :ErrorCode = "DB_ERR";
-pub const DB_QUERY_ERR :ErrorCode = "DB_QUERY_ERR";
-pub const UNKONWN_ERR :ErrorCode = "UNKONWN_ERR";
+pub const DB_ERR: &str = "DB_ERR";
+pub const DB_QUERY_ERR: &str = "DB_QUERY_ERR";
+pub const UNKONWN_ERR: &str = "UNKONWN_ERR";
+
+pub const DATA_NOT_FIND_ERR: &str = "DATA_NOT_FIND";
+pub const REDIS_ERR: &str = "REDIS_ERR";
+pub const POOL_ERR: &str = "POOL_ERR";
 
 
-pub const DATA_NOT_FIND_ERR :ErrorCode = "DATA_NOT_FIND";
+pub const PARAMS_VALIDATE_ERR: &str = "PARAMS_VALIDATE_ERR";
