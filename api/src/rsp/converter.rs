@@ -33,12 +33,14 @@ pub(crate) fn convert_validation_errors(err: &ValidationErrors) -> Value {
 impl From<ValidationErrors> for ApiResponse<Value> {
     fn from(errors: ValidationErrors) -> Self {
         let errors_json = convert_validation_errors(&errors);
-        ApiResponse {
-            code: "Validator".to_string(),
-            msg: "ValidationErrors".to_string(),
-            success: false,
-            data: errors_json,
-        }
+        ApiResponse::error_with_data("","",errors_json)
+    }
+}
+
+impl From<&ValidationErrors> for ApiResponse<Value> {
+    fn from(errors: &ValidationErrors) -> Self {
+        let errors_json = convert_validation_errors(errors);
+        ApiResponse::error_with_data("","",errors_json)
     }
 }
 
@@ -47,45 +49,18 @@ impl From<DbErr> for ApiResponse<Value> {
         errors.to_string();
 
         debug!("DbErr: {:?}", errors);
-        ApiResponse {
-            code: "DbErr".to_string(),
-            msg: "DbErr".to_string(),
-            success: false,
-            data: Value::String(errors.to_string()),
-        }
-    }
-}
-
-impl From<&ValidationErrors> for ApiResponse<Value> {
-    fn from(errors: &ValidationErrors) -> Self {
-        let errors_json = convert_validation_errors(errors);
-        ApiResponse {
-            code: "Validator".to_string(),
-            msg: "ValidationErrors".to_string(),
-            success: false,
-            data: errors_json,
-        }
+        ApiResponse::error_with_data("","",Value::String(errors.to_string()))
     }
 }
 
 impl From<r2d2::Error> for ApiResponse<Value> {
     fn from(errors: r2d2::Error) -> Self {
-        ApiResponse {
-            code: "PoolError".to_string(),
-            msg: "ObjectPoolErr".to_string(),
-            success: false,
-            data: Value::String(errors.to_string()),
-        }
+        ApiResponse::error("","")
     }
 }
 
 impl From<RedisError> for ApiResponse<Value> {
     fn from(errors: RedisError) -> Self {
-        ApiResponse {
-            code: "CacheErr".to_string(),
-            msg: "RedisErr".to_string(),
-            success: false,
-            data: Value::String(errors.to_string()),
-        }
+        ApiResponse::error("","")
     }
 }
