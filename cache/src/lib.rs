@@ -31,4 +31,22 @@ impl fmt::Debug for RedisConnectionManager {
 }
 
 #[cfg(all(feature = "standalone", feature = "cluster"))]
-compile_error!("feature_a 和 feature_b 是互斥的，不能同时启用！");
+compile_error!("standalone 和 cluster 是互斥的，不能同时启用！");
+
+/// 避免IDE提示错误
+#[cfg(all(not(feature = "standalone"), not(feature = "cluster")))]
+impl ManageConnection for RedisConnectionManager {
+    type Connection = redis::Connection;
+    type Error = RedisError;
+    fn connect(&self) -> Result<Self::Connection, Self::Error> {
+        unimplemented!()
+    }
+
+    fn is_valid(&self, _conn: &mut Self::Connection) -> Result<(), Self::Error> {
+        unimplemented!()
+    }
+
+    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
+        unimplemented!()
+    }
+}
