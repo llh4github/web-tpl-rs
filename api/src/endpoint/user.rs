@@ -162,7 +162,7 @@ pub async fn update_pwd(
     match option {
         None => {
             txn.commit().await?;
-            error_rsp(DATA_NOT_FIND_ERR, format!("id: {}", req.id));
+            error_rsp(DATA_NOT_FIND_ERR, format!("id: {}", req.id))
         }
         Some(m) => {
             let mut data_db = m.into_active_model();
