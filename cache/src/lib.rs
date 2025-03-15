@@ -1,4 +1,7 @@
+#[cfg(feature = "cluster")]
 mod cluster;
+
+#[cfg(feature = "standalone")]
 mod standalone;
 
 use common::cfg::RedisMode;

@@ -6,7 +6,8 @@ edition = "2024"
 [workspace]
 resolver = "2"
 members = [".", "api", "cache", "common", "db"]
-
+[features]
+dev = ["cache/standalone"]
 [dependencies]
 api = { path = "api" }
 common = { path = "common" }
