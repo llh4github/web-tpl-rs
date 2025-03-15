@@ -1,6 +1,8 @@
+//! 响应包装器
+//! 用于包装响应数据，统一响应格式
 use crate::rsp::converter::convert_validation_errors;
-use actix_web::http::StatusCode;
 use actix_web::http::header::TryIntoHeaderValue;
+use actix_web::http::StatusCode;
 use actix_web::{HttpRequest, HttpResponse, Responder, ResponseError};
 use chrono::Utc;
 use common::{OK_STR, SUCCESS_STR};
@@ -10,7 +12,6 @@ use std::fmt::{Debug, Display};
 use thiserror::Error;
 use utoipa::ToSchema;
 use validator::ValidationErrors;
-
 
 #[derive(Serialize, ToSchema, Error, Debug)]
 #[error("ApiResponse: {code} {msg} {success} {data}")]
@@ -28,7 +29,7 @@ where
     S: serde::Serializer,
 {
     let dt = Utc::now();
-    serializer.serialize_i64(dt.timestamp())
+    serializer.serialize_i64(dt.timestamp_millis())
 }
 
 impl<T: Serialize> ApiResponse<T> {
@@ -53,7 +54,7 @@ impl<T: Serialize> ApiResponse<T> {
     }
 }
 impl ApiResponse<Value> {
-    // 错误响应构造函数
+    /// 错误响应构造函数
     pub fn error(code: impl Into<String>, msg: impl Into<String>) -> Self {
         Self {
             data: Value::Null,
@@ -66,7 +67,7 @@ impl ApiResponse<Value> {
 
     pub fn error_with_data(code: impl Into<String>, msg: impl Into<String>, data: Value) -> Self {
         Self {
-            data: data,
+            data,
             code: code.into(),
             msg: msg.into(),
             success: false,

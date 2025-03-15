@@ -1,8 +1,8 @@
-//! #[allow(dead_code)]
+//! 响应码常量
 
 pub const DB_ERR: &str = "DB_ERR";
 pub const DB_QUERY_ERR: &str = "DB_QUERY_ERR";
-pub const UNKONWN_ERR: &str = "UNKONWN_ERR";
+pub const UNKNOWN_ERR: &str = "UNKNOWN_ERR";
 
 pub const DATA_NOT_FIND_ERR: &str = "DATA_NOT_FIND";
 pub const REDIS_ERR: &str = "REDIS_ERR";
