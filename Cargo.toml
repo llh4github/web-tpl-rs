@@ -5,10 +5,9 @@ edition = "2024"
 
 [workspace]
 resolver = "2"
-members = [
-    ".", "api", "cache", "common", "db"
-]
-
+members = [".", "api", "cache", "common", "db"]
+[features]
+dev = ["cache/standalone"]
 [dependencies]
 api = { path = "api" }
 common = { path = "common" }
@@ -18,6 +17,8 @@ cache = { path = "cache" }
 files = ["config/application.toml"]
 
 [workspace.dependencies]
+chrono = { version = "0.4.40", features = ["serde"] }
+anyhow = "1.0"
 thiserror = "2.0.11"
 utoipa = { version = "5.3.1", features = ["actix_extras", "chrono"] }
 utoipa-swagger-ui = { version = "9.0.0", features = ["actix-web", "vendored"] }
@@ -30,16 +31,28 @@ validator_derive = "0.20"
 
 config = "0.14.0"
 log = "0.4"
-flexi_logger = { version = "0.29", features = ["async", "specfile", "compress"] }
+flexi_logger = { version = "0.29", features = [
+    "async",
+    "specfile",
+    "compress",
+] }
 #slog = "2.7"
 #slog-async = "2.7"
 #slog-term = "2.7"
 
 sea-orm = { version = "1.1.6", features = [
-    "sqlx-postgres", "runtime-tokio-native-tls",
-    "macros", "postgres-array", "with-json",
+    "sqlx-postgres",
+    "runtime-tokio-native-tls",
+    "macros",
+    "postgres-array",
+    "with-json",
 ] }
-redis = { version = "0.29", features = ["cluster-async", "cluster", "r2d2", "tokio-comp"] }
+redis = { version = "0.29", features = [
+    "cluster-async",
+    "cluster",
+    "r2d2",
+    "tokio-comp",
+] }
 
 r2d2 = { version = "0.8.10" }
 bcrypt = "0.17"

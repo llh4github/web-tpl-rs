@@ -1,7 +1,10 @@
+//! 响应包装器
+//! 用于包装响应数据，统一响应格式
 use crate::rsp::converter::convert_validation_errors;
 use actix_web::http::header::TryIntoHeaderValue;
 use actix_web::http::StatusCode;
 use actix_web::{HttpRequest, HttpResponse, Responder, ResponseError};
+use chrono::Utc;
 use common::{OK_STR, SUCCESS_STR};
 use serde::Serialize;
 use serde_json::Value;
@@ -10,11 +13,6 @@ use thiserror::Error;
 use utoipa::ToSchema;
 use validator::ValidationErrors;
 
-/// ApiResult 接口统一响应结果
-pub type ApiResult<T> = Result<ApiResponse<T>, ApiResponse<Value>>;
-
-#[derive(Serialize, ToSchema)]
-pub struct EmptyData;
 #[derive(Serialize, ToSchema, Error, Debug)]
 #[error("ApiResponse: {code} {msg} {success} {data}")]
 pub struct ApiResponse<T> {
@@ -22,6 +20,16 @@ pub struct ApiResponse<T> {
     pub msg: String,
     pub success: bool,
     pub data: T,
+    #[serde(serialize_with = "serialize_timestamp")]
+    timestamp: (),
+}
+
+fn serialize_timestamp<S>(_: &(), serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let dt = Utc::now();
+    serializer.serialize_i64(dt.timestamp_millis())
 }
 
 impl<T: Serialize> ApiResponse<T> {
@@ -32,17 +40,38 @@ impl<T: Serialize> ApiResponse<T> {
             code: SUCCESS_STR.to_string(),
             msg: OK_STR.to_string(),
             success: true,
+            timestamp: (),
+        }
+    }
+    pub fn success_with_msg(data: T, msg: impl Into<String>) -> Self {
+        Self {
+            data,
+            code: SUCCESS_STR.to_string(),
+            msg: msg.into(),
+            success: true,
+            timestamp: (),
         }
     }
 }
 impl ApiResponse<Value> {
-    // 错误响应构造函数
+    /// 错误响应构造函数
     pub fn error(code: impl Into<String>, msg: impl Into<String>) -> Self {
         Self {
             data: Value::Null,
             code: code.into(),
             msg: msg.into(),
             success: false,
+            timestamp: (),
+        }
+    }
+
+    pub fn error_with_data(code: impl Into<String>, msg: impl Into<String>, data: Value) -> Self {
+        Self {
+            data,
+            code: code.into(),
+            msg: msg.into(),
+            success: false,
+            timestamp: (),
         }
     }
 }
@@ -57,48 +86,6 @@ impl<T: Serialize> Responder for ApiResponse<T> {
 
 impl ResponseError for ApiResponse<Value> {
     fn error_response(&self) -> HttpResponse {
-        HttpResponse::build(StatusCode::OK)
-            .content_type("application/json")
-            .json(self)
-    }
-}
-
-#[deprecated(since = "0.1.0", note = "Use ApiResponse instead")]
-#[derive(Serialize, Debug, Error)]
-pub enum ApiErrors<'a> {
-    #[error("CommonError: {code} {msg}")]
-    CommonError {
-        code: &'a str,
-        msg: &'a str,
-    },
-    #[error("ValidationError: {0}")]
-    ValidationError(#[from] ValidationErrors),
-    // DbError(#[from] DbErr),
-}
-impl<'a> From<ApiErrors<'a>> for ApiResponse<Value> {
-    fn from(value: ApiErrors<'a>) -> Self {
-        match value {
-            ApiErrors::CommonError { code, msg } => ApiResponse {
-                code: code.to_string(),
-                msg: msg.to_string(),
-                success: false,
-                data: Value::Null,
-            },
-            ApiErrors::ValidationError(errors) => {
-                let errors_json = convert_validation_errors(&errors);
-                ApiResponse {
-                    code: "Validator".to_string(),
-                    msg: "ValidationErrors".to_string(),
-                    success: false,
-                    data: errors_json,
-                }
-            }
-            // ApiErrors::DbError(_) => ApiResponse {
-            //     code: "DbError".to_string(),
-            //     msg: "DbError".to_string(),
-            //     success: false,
-            //     data: Value::Null,
-            // },
-        }
+        HttpResponse::build(StatusCode::OK).json(self)
     }
 }
