@@ -1,9 +1,11 @@
-use crate::rsp::ApiResponse;
+//! 转换器
+//! 将各种错误转换为ApiResponse
 use crate::rsp::code::{DB_ERR, POOL_ERR};
 use crate::rsp::types::{ErrorDetail, FieldError};
+use crate::rsp::ApiResponse;
 use redis::RedisError;
 use sea_orm::DbErr;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use validator::ValidationErrors;
