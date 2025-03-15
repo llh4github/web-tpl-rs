@@ -14,3 +14,7 @@ port = 5432
 [redis]
 type = "Standalone"
 node = "redis://localhost:6379"
+[jwt]
+issuer = "web-tpl"
+secret = "secret"
+expiration = 3600

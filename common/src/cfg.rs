@@ -3,6 +3,23 @@ use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 use std::env;
 
+#[derive(Debug, Deserialize)]
+#[allow(unused)]
+pub struct Settings {
+    pub debug: bool,
+    pub network: ApiNetwork,
+    pub database: Database,
+    pub redis: RedisMode,
+    pub jwt: Jwt,
+}
+#[derive(Debug, Deserialize)]
+#[allow(unused)]
+pub struct Jwt {
+    pub issuer: String,
+    pub secret: String,
+    pub expiration: i64,
+}
+
 /// URL format: `{redis|rediss}://[<username>][:<password>@]<hostname>[:port][/<db>]`
 ///
 /// - Basic: `redis://127.0.0.1:6379`
@@ -23,14 +40,6 @@ pub enum RedisMode {
 pub struct ApiNetwork {
     pub port: u16,
     pub prefix: String,
-}
-#[derive(Debug, Deserialize)]
-#[allow(unused)]
-pub struct Settings {
-    pub debug: bool,
-    pub network: ApiNetwork,
-    pub database: Database,
-    pub redis: RedisMode,
 }
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
