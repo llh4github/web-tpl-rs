@@ -23,7 +23,7 @@ COPY . .
 #RUN export RUSTUP_DIST_SERVER="https://rsproxy.cn"
 #RUN export RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
 # 构建项目
-RUN cargo build --release --locked
+RUN cargo build --release --locked --features dev
 
 FROM ubuntu:24.04
 # 安装运行时依赖
