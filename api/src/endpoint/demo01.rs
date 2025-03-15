@@ -1,10 +1,17 @@
-use crate::rsp::{ok_rsp, ApiResponse, ApiResult};
+use crate::rsp::{ApiResponse, ApiResult, ok_rsp};
 use actix_web::web::Json;
 use actix_web::{get, post, web};
+use redis::ToRedisArgs;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use validator::Validate;
 use validator_derive::Validate;
+use utoipa_actix_web::service_config::ServiceConfig;
+
+pub(super) fn register_api(c: &mut ServiceConfig) {
+    c.service(get_student);
+    c.service(add_student);
+}
 
 #[derive(Deserialize, Serialize, Debug, ToSchema, Validate)]
 pub struct Student {

@@ -3,7 +3,6 @@ use common::cfg::RedisMode;
 use r2d2::ManageConnection;
 use redis::{Client, ConnectionLike, RedisError};
 
-#[cfg(feature = "standalone")]
 impl ManageConnection for RedisConnectionManager {
     type Connection = redis::Connection;
     type Error = RedisError;

@@ -1,12 +1,16 @@
-use crate::rsp::ApiResponse;
+//! 转换器
+//! 将各种错误转换为ApiResponse
+use crate::rsp::code::{DB_ERR, POOL_ERR};
 use crate::rsp::types::{ErrorDetail, FieldError};
-use log::debug;
+use crate::rsp::ApiResponse;
 use redis::RedisError;
 use sea_orm::DbErr;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use validator::ValidationErrors;
+
+use super::code::{PARAMS_VALIDATE_ERR, REDIS_ERR};
 
 fn convert_params(params: HashMap<Cow<'static, str>, Value>) -> Option<Value> {
     let json_value = serde_json::to_value(params).unwrap_or(Value::Null);
@@ -33,59 +37,37 @@ pub(crate) fn convert_validation_errors(err: &ValidationErrors) -> Value {
 impl From<ValidationErrors> for ApiResponse<Value> {
     fn from(errors: ValidationErrors) -> Self {
         let errors_json = convert_validation_errors(&errors);
-        ApiResponse {
-            code: "Validator".to_string(),
-            msg: "ValidationErrors".to_string(),
-            success: false,
-            data: errors_json,
-        }
-    }
-}
-
-impl From<DbErr> for ApiResponse<Value> {
-    fn from(errors: DbErr) -> Self {
-        errors.to_string();
-
-        debug!("DbErr: {:?}", errors);
-        ApiResponse {
-            code: "DbErr".to_string(),
-            msg: "DbErr".to_string(),
-            success: false,
-            data: Value::String(errors.to_string()),
-        }
+        log::error!("ValidationErrors : {}", errors);
+        ApiResponse::error_with_data(PARAMS_VALIDATE_ERR, "参数验证失败", errors_json)
     }
 }
 
 impl From<&ValidationErrors> for ApiResponse<Value> {
     fn from(errors: &ValidationErrors) -> Self {
         let errors_json = convert_validation_errors(errors);
-        ApiResponse {
-            code: "Validator".to_string(),
-            msg: "ValidationErrors".to_string(),
-            success: false,
-            data: errors_json,
-        }
+        log::error!("ValidationErrors : {}", errors);
+        ApiResponse::error_with_data(PARAMS_VALIDATE_ERR, "参数验证失败", errors_json)
+    }
+}
+
+impl From<DbErr> for ApiResponse<Value> {
+    fn from(errors: DbErr) -> Self {
+        errors.to_string();
+        log::error!("DB run err: {}", errors);
+        ApiResponse::error_with_data(DB_ERR, "DB Err", Value::String(errors.to_string()))
     }
 }
 
 impl From<r2d2::Error> for ApiResponse<Value> {
     fn from(errors: r2d2::Error) -> Self {
-        ApiResponse {
-            code: "PoolError".to_string(),
-            msg: "ObjectPoolErr".to_string(),
-            success: false,
-            data: Value::String(errors.to_string()),
-        }
+        log::error!("r2d2 Pool run err: {}", errors);
+        ApiResponse::error(POOL_ERR, "池化对象出错")
     }
 }
 
 impl From<RedisError> for ApiResponse<Value> {
     fn from(errors: RedisError) -> Self {
-        ApiResponse {
-            code: "CacheErr".to_string(),
-            msg: "RedisErr".to_string(),
-            success: false,
-            data: Value::String(errors.to_string()),
-        }
+        log::error!("Redis run err: {}", errors);
+        ApiResponse::error(REDIS_ERR, "Redis Error")
     }
 }

@@ -1,22 +1,30 @@
 use crate::global::AppResources;
-use crate::rsp::ApiErrors::CommonError;
-use crate::rsp::{ok_rsp, ApiResponse, ApiResult, PageResult};
+use crate::rsp::code::DATA_NOT_FIND_ERR;
+use crate::rsp::{ApiResponse, ApiResult, PageResult, error_rsp, ok_rsp};
 use crate::{dto, rsp};
 use actix_web::{get, post, web};
 use db::entities::auth_user;
 use db::entities::prelude::AuthUser;
 use log::{debug, info};
 use redis::Commands;
+use sea_orm::ActiveValue::Set;
 use sea_orm::sea_query::SimpleExpr;
 use sea_orm::sqlx::types::chrono;
-use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, Condition, EntityTrait, IntoActiveModel, TransactionTrait};
 use sea_orm::{ColumnTrait, QueryOrder};
 use sea_orm::{PaginatorTrait, QueryFilter};
 use serde_json::json;
+use utoipa_actix_web::service_config::ServiceConfig;
 use validator::Validate;
 
 const REDIS_KEY: &str = "web-tpl:cache:user";
+
+pub(super) fn register_api(c: &mut ServiceConfig) {
+    c.service(find_user);
+    c.service(add_user);
+    c.service(page_query);
+    c.service(update_pwd);
+}
 
 /// 根据 ID 查找数据
 #[utoipa::path(
@@ -77,11 +85,7 @@ pub async fn add_user(
         .await?;
     if option.is_some() {
         txn.commit().await?;
-        return Err(CommonError {
-            code: "1001",
-            msg: "用户名已存在",
-        }
-        .into());
+        return error_rsp(DATA_NOT_FIND_ERR, format!("Username: {}", req.username));
     }
 
     let option: Option<auth_user::Model> = AuthUser::find()
@@ -90,11 +94,7 @@ pub async fn add_user(
         .await?;
     if option.is_some() {
         txn.commit().await?;
-        return Err(CommonError {
-            code: "1001",
-            msg: "邮箱已存在",
-        }
-        .into());
+        return error_rsp(DATA_NOT_FIND_ERR, format!("Email: {}", req.email));
     }
 
     let x = auth_user::ActiveModel {
@@ -162,7 +162,7 @@ pub async fn update_pwd(
     match option {
         None => {
             txn.commit().await?;
-            Err(ApiResponse::error("DataNotFound", "Data not found"))
+            error_rsp(DATA_NOT_FIND_ERR, format!("id: {}", req.id))
         }
         Some(m) => {
             let mut data_db = m.into_active_model();
