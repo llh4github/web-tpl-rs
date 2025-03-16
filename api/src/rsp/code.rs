@@ -8,5 +8,6 @@ pub const DATA_NOT_FIND_ERR: &str = "DATA_NOT_FIND";
 pub const REDIS_ERR: &str = "REDIS_ERR";
 pub const POOL_ERR: &str = "POOL_ERR";
 
+pub const JWT_TOKEN_ERR: &str = "JWT_TOKEN_ERR";
 
 pub const PARAMS_VALIDATE_ERR: &str = "PARAMS_VALIDATE_ERR";

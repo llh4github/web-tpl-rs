@@ -1,7 +1,14 @@
 use crate::global::AppResources;
+use crate::rsp::code::JWT_TOKEN_ERR;
+use crate::rsp::ApiResponse;
 use crate::util;
-use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, error, web, Error, HttpMessage};
+use actix_web::{
+    dev::{Service, ServiceRequest, ServiceResponse, Transform}, error,
+    web,
+    Error, HttpMessage,
+};
 use futures_util::future::{ready, LocalBoxFuture, Ready};
+use serde_json::json;
 use std::task::{Context, Poll};
 
 pub struct Jwt;
@@ -60,7 +67,9 @@ where
             Some(t) => t,
             None => {
                 return Box::pin(async {
-                    Err(error::ErrorUnauthorized("缺少 Authorization 头"))
+                    let msg = ApiResponse::error(JWT_TOKEN_ERR, "无Token信息");
+                    let msg = json!(msg).to_string();
+                    Err(error::ErrorUnauthorized(msg))
                 });
             }
         };
@@ -74,9 +83,15 @@ where
             Err(error) => Box::pin(async move {
                 match error.kind() {
                     jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
-                        Err(error::ErrorUnauthorized("Token 已过期"))
+                        let msg = ApiResponse::error(JWT_TOKEN_ERR, "Token已过期");
+                        let msg = json!(msg).to_string();
+                        Err(error::ErrorUnauthorized(msg))
                     }
-                    _ => Err(error::ErrorUnauthorized("无效 Token")),
+                    _ => {
+                        let msg = ApiResponse::error(JWT_TOKEN_ERR, "无效 Token");
+                        let msg = json!(msg).to_string();
+                        Err(error::ErrorUnauthorized(msg))
+                    }
                 }
             }),
         }
