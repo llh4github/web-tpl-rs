@@ -10,7 +10,7 @@ use redis::{ConnectionLike, RedisError};
 use std::fmt;
 
 /// 创建 Redis 连接池
-pub fn create_redis_pool(config: RedisMode) -> Result<Pool<RedisConnectionManager>, RedisError> {
+pub fn create_redis_pool(config: &RedisMode) -> Result<Pool<RedisConnectionManager>, RedisError> {
     let manager = RedisConnectionManager::new(config);
     let pool = Pool::builder().build(manager).unwrap();
     Ok(pool)
@@ -22,8 +22,10 @@ pub struct RedisConnectionManager {
     config: RedisMode,
 }
 impl RedisConnectionManager {
-    pub fn new(config: RedisMode) -> Self {
-        Self { config }
+    pub fn new(config: &RedisMode) -> Self {
+        Self {
+            config: config.clone(),
+        }
     }
 }
 

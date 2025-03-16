@@ -35,7 +35,7 @@ pub fn create_token(
 }
 /// JWT Claims结构
 #[derive(Debug, Serialize, Deserialize, Default)]
-struct Claims {
+pub struct Claims {
     /// 标识 JWT 的过期时间（UNIX 时间戳）
     exp: i64,
     /// 标识 JWT 的签发时间（UNIX 时间戳）

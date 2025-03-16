@@ -3,7 +3,7 @@ use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 use std::env;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Settings {
     pub debug: bool,
@@ -12,7 +12,7 @@ pub struct Settings {
     pub redis: RedisMode,
     pub jwt: Jwt,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Jwt {
     pub issuer: String,
@@ -35,13 +35,13 @@ pub enum RedisMode {
     Standalone { node: String },
     Cluster { nodes: Vec<String> },
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct ApiNetwork {
     pub port: u16,
     pub prefix: String,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Database {
     pub username: String,

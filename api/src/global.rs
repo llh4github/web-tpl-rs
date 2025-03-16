@@ -7,4 +7,5 @@ use sea_orm::DatabaseConnection;
 pub struct AppResources {
     pub db: DatabaseConnection,
     pub redis_pool: Pool<RedisConnectionManager>,
+    pub cfg: common::cfg::Settings,
 }
