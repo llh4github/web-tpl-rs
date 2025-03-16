@@ -16,5 +16,9 @@ type = "Standalone"
 node = "redis://localhost:6379"
 [jwt]
 issuer = "web-tpl"
-secret = "secret"
+secret = "KZLQ7e1R*OmK^s1Yi5qqqe5yhN9VaYbdqfOn*8CxoA"
 expiration = 3600
+[cache]
+prefix = "web-tpl:cache"
+ttl = 3600
+ttl-delta = 13

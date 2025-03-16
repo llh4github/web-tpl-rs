@@ -11,7 +11,19 @@ pub struct Settings {
     pub database: Database,
     pub redis: RedisMode,
     pub jwt: Jwt,
+    pub cache: Cache,
 }
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Cache {
+    /// 缓存前缀
+    pub prefix: String,
+    /// 缓存过期时间 秒
+    pub ttl: i64,
+    /// 缓存时间波动值 秒
+    pub ttl_delta: i64,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Jwt {
