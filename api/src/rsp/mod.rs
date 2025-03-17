@@ -7,12 +7,15 @@
 #[allow(dead_code)]
 pub mod code;
 mod converter;
+mod errors;
 pub mod types;
 mod wrapper;
 
+pub use errors::AppErrors;
 use serde::Serialize;
 pub use types::PageResult;
 pub use wrapper::ApiResponse;
+
 
 /// ApiResult 接口统一响应结果
 pub type ApiResult<T> = Result<ApiResponse<T>, ApiResponse<serde_json::Value>>;
