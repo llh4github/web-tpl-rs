@@ -1,2 +1,2 @@
 pub mod jwt;
-pub use jwt::{create_token, parse_token};
+pub use jwt::{create_token, validat_token};

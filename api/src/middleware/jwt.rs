@@ -1,13 +1,13 @@
-use crate::global::AppResources;
-use crate::rsp::code::JWT_TOKEN_ERR;
 use crate::rsp::ApiResponse;
+use crate::rsp::code::JWT_TOKEN_ERR;
 use crate::util;
+use crate::{global::AppResources, rsp::AppErrors};
 use actix_web::{
-    dev::{Service, ServiceRequest, ServiceResponse, Transform}, error,
-    web,
-    Error, HttpMessage,
+    Error,
+    dev::{Service, ServiceRequest, ServiceResponse, Transform},
+    error, web,
 };
-use futures_util::future::{ready, LocalBoxFuture, Ready};
+use futures_util::future::{LocalBoxFuture, Ready, err, ready};
 use serde_json::json;
 use std::task::{Context, Poll};
 
@@ -17,7 +17,7 @@ pub struct JwtService<S> {
 }
 impl<S: 'static, B> Transform<S, ServiceRequest> for Jwt
 where
-    S: Service<ServiceRequest, Response=ServiceResponse<B>, Error=Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
 {
     type Response = ServiceResponse<B>;
@@ -33,7 +33,7 @@ where
 
 impl<S, B> Service<ServiceRequest> for JwtService<S>
 where
-    S: Service<ServiceRequest, Response=ServiceResponse<B>, Error=Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
 {
     type Response = ServiceResponse<B>;
@@ -55,12 +55,13 @@ where
             .expect("cfg::Settings is not found")
             .get_ref()
             .clone();
+        let jwt_cfg = resources.cfg.jwt;
 
         // 提取 Authorization 头
-        let auth_header = req.headers().get("Authorization");
+        let auth_header = req.headers().get(&jwt_cfg.header_name);
         let token = auth_header
             .and_then(|h| h.to_str().ok())
-            .and_then(|h| h.strip_prefix("Bearer "))
+            .and_then(|h| h.strip_prefix(&jwt_cfg.header_prefix))
             .and_then(|h| Some(h.to_string()));
 
         let token = match token {
@@ -73,20 +74,40 @@ where
                 });
             }
         };
-        let jwt_cfg = resources.cfg.jwt;
-        let decode = util::parse_token(&jwt_cfg, token);
-        match decode {
-            Ok(claims) => {
+
+        let mut pool = match resources.redis_pool.get() {
+            Ok(p) => p,
+            Err(e) => {
+                log::error!("redis pool error : {}", e);
+                return Box::pin(async {
+                    let msg = ApiResponse::error(JWT_TOKEN_ERR, "Redis连接池错误");
+                    let msg = json!(msg).to_string();
+                    Err(error::ErrorUnauthorized(msg))
+                });
+            }
+        };
+        let valiadte_result =
+            util::validat_token(&mut pool, &resources.cfg.cache, &jwt_cfg, token.clone());
+        match valiadte_result {
+            Ok(_) => {
                 let fut = self.service.call(req);
                 Box::pin(async move { fut.await })
             }
             Err(error) => Box::pin(async move {
-                match error.kind() {
-                    jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
-                        let msg = ApiResponse::error(JWT_TOKEN_ERR, "Token已过期");
-                        let msg = json!(msg).to_string();
-                        Err(error::ErrorUnauthorized(msg))
-                    }
+                log::debug!("token 验证未通过：{} {}", error, token.clone());
+                match error {
+                    AppErrors::JwtValidateErr { token: _, source } => match source.kind() {
+                        jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
+                            let msg = ApiResponse::error(JWT_TOKEN_ERR, "Token已过期");
+                            let msg = json!(msg).to_string();
+                            Err(error::ErrorUnauthorized(msg))
+                        }
+                        _ => {
+                            let msg = ApiResponse::error(JWT_TOKEN_ERR, "无效 Token");
+                            let msg = json!(msg).to_string();
+                            Err(error::ErrorUnauthorized(msg))
+                        }
+                    },
                     _ => {
                         let msg = ApiResponse::error(JWT_TOKEN_ERR, "无效 Token");
                         let msg = json!(msg).to_string();

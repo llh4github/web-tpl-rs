@@ -1,9 +1,11 @@
 use cache::RedisConnectionManager;
 use chrono::Utc;
 use common::cfg;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use r2d2::PooledConnection;
 use serde::{Deserialize, Serialize};
+
+use crate::rsp::AppErrors;
 
 const KEY_INFIX: &str = "jwt";
 
@@ -43,23 +45,33 @@ fn create_token_with_claims(
     let secret = cfg.secret.as_bytes();
     encode(&header, my_claims, &EncodingKey::from_secret(secret))
 }
-pub fn fetch_token(
+pub fn validat_token(
     redis_pool: &mut PooledConnection<RedisConnectionManager>,
     cache: &cfg::Cache,
     jwt: &cfg::Jwt,
     token: String,
-) {
-    let claims = parse_token(jwt, token.clone()).unwrap();
+) -> Result<(), AppErrors> {
+    let claims = parse_token(jwt, token.clone()).map_err(|e| AppErrors::JwtValidateErr {
+        token: token.clone(),
+        source: e,
+    })?;
     let key = cache::gen_key(cache, vec![KEY_INFIX.to_string(), claims.sub.clone()]);
     let token_db = redis::cmd("get")
         .arg(key)
-        .query::<Option<String>>(redis_pool)
-        .unwrap();
+        .query::<Option<String>>(redis_pool)?;
     match token_db {
-        None => {}
+        None => Err(AppErrors::CommonErr(format!(
+            "token is not in redis: {}",
+            token
+        ))),
         Some(t) => {
             if t != token {
-                create_and_cache_token(redis_pool, claims.sub.clone(), jwt, cache);
+                Err(AppErrors::CommonErr(format!(
+                    "token与redis中的数据不相等: {}",
+                    token
+                )))
+            } else {
+                Ok(())
             }
         }
     }
@@ -69,22 +81,22 @@ pub fn create_and_cache_token(
     username: String,
     jwt: &cfg::Jwt,
     cache: &cfg::Cache,
-) {
+) -> Result<String, AppErrors> {
     let my_claims = Claims {
         sub: username.clone(),
         iss: jwt.issuer.clone(),
         iat: Utc::now().timestamp(),
         exp: Utc::now().timestamp() + jwt.expiration,
     };
-    let token = create_token_with_claims(jwt, &my_claims).unwrap();
+    let token = create_token_with_claims(jwt, &my_claims)?;
     let key = cache::gen_key(cache, vec![KEY_INFIX.to_string(), username.clone()]);
     redis::cmd("set")
         .arg(key)
-        .arg(token)
+        .arg(token.clone())
         .arg("EX")
         .arg(jwt.expiration)
-        .exec(redis_pool)
-        .unwrap();
+        .exec(redis_pool)?;
+    Ok(token.clone())
 }
 /// JWT Claims结构
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -109,6 +121,8 @@ mod tests {
             issuer: "issuer".to_string(),
             secret: "test".to_string(),
             expiration: 114514,
+            header_name: "".to_string(),
+            header_prefix: "".to_string(),
         };
         let token = create_token(&cfg, "username".to_string())?;
         println!("{}", token);
