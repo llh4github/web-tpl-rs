@@ -27,6 +27,8 @@ pub struct Cache {
 #[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Jwt {
+    pub header_name: String,
+    pub header_prefix:String,
     pub issuer: String,
     pub secret: String,
     pub expiration: i64,

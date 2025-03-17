@@ -15,6 +15,8 @@ port = 5432
 type = "Standalone"
 node = "redis://localhost:6379"
 [jwt]
+header_name = "Authorization"
+header_prefix = "Bearer "
 issuer = "web-tpl"
 secret = "KZLQ7e1R*OmK^s1Yi5qqqe5yhN9VaYbdqfOn*8CxoA"
 expiration = 3600
