@@ -23,4 +23,4 @@ expiration = 3600
 [cache]
 prefix = "web-tpl:cache"
 ttl = 3600
-ttl-delta = 13
+ttl_delta = 13
