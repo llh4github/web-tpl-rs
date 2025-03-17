@@ -50,7 +50,7 @@ pub fn fetch_token(
     token: String,
 ) {
     let claims = parse_token(jwt, token.clone()).unwrap();
-    let key = cache::gen_key(cache, vec![KEY_INFIX.to_string(), claims.sub]);
+    let key = cache::gen_key(cache, vec![KEY_INFIX.to_string(), claims.sub.clone()]);
     let token_db = redis::cmd("get")
         .arg(key)
         .query::<Option<String>>(redis_pool)
@@ -59,7 +59,7 @@ pub fn fetch_token(
         None => {}
         Some(t) => {
             if t != token {
-                create_and_cache_token(redis_pool, claims.sub, jwt, cache);
+                create_and_cache_token(redis_pool, claims.sub.clone(), jwt, cache);
             }
         }
     }
@@ -71,13 +71,13 @@ pub fn create_and_cache_token(
     cache: &cfg::Cache,
 ) {
     let my_claims = Claims {
-        sub: username,
+        sub: username.clone(),
         iss: jwt.issuer.clone(),
         iat: Utc::now().timestamp(),
         exp: Utc::now().timestamp() + jwt.expiration,
     };
     let token = create_token_with_claims(jwt, &my_claims).unwrap();
-    let key = cache::gen_key(cache, vec![KEY_INFIX.to_string(), username]);
+    let key = cache::gen_key(cache, vec![KEY_INFIX.to_string(), username.clone()]);
     redis::cmd("set")
         .arg(key)
         .arg(token)
