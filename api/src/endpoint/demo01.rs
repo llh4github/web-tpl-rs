@@ -1,7 +1,6 @@
 use crate::rsp::{ApiResponse, ApiResult, ok_rsp};
 use actix_web::web::Json;
 use actix_web::{get, post, web};
-use redis::ToRedisArgs;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use validator::Validate;

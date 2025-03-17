@@ -20,19 +20,6 @@ pub fn parse_token(cfg: &cfg::Jwt, token: String) -> Result<Claims, jsonwebtoken
     Ok(token.claims)
 }
 
-pub fn create_token(
-    cfg: &cfg::Jwt,
-    username: String,
-) -> Result<String, jsonwebtoken::errors::Error> {
-    let my_claims = Claims {
-        sub: username,
-        iss: cfg.issuer.clone(),
-        iat: Utc::now().timestamp(),
-        exp: Utc::now().timestamp() + cfg.expiration,
-    };
-    create_token_with_claims(cfg, &my_claims)
-}
-
 fn create_token_with_claims(
     cfg: &cfg::Jwt,
     my_claims: &Claims,
@@ -45,6 +32,8 @@ fn create_token_with_claims(
     let secret = cfg.secret.as_bytes();
     encode(&header, my_claims, &EncodingKey::from_secret(secret))
 }
+
+/// 验证token 
 pub fn validat_token(
     redis_pool: &mut PooledConnection<RedisConnectionManager>,
     cache: &cfg::Cache,
@@ -76,6 +65,8 @@ pub fn validat_token(
         }
     }
 }
+
+/// 创建并缓存token
 pub fn create_and_cache_token(
     redis_pool: &mut PooledConnection<RedisConnectionManager>,
     username: String,
@@ -109,27 +100,4 @@ pub struct Claims {
     iss: String,
     /// 标识 JWT 的主题（用户 ID 或邮箱）
     sub: String,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_token() -> Result<(), jsonwebtoken::errors::Error> {
-        let cfg = cfg::Jwt {
-            issuer: "issuer".to_string(),
-            secret: "test".to_string(),
-            expiration: 114514,
-            header_name: "".to_string(),
-            header_prefix: "".to_string(),
-        };
-        let token = create_token(&cfg, "username".to_string())?;
-        println!("{}", token);
-        let claims = parse_token(&cfg, token)?;
-        println!("{:?}", claims);
-        assert_eq!(claims.sub, "username");
-        assert_eq!(claims.iss, cfg.issuer);
-        Ok(())
-    }
 }

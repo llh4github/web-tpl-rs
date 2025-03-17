@@ -7,16 +7,14 @@ mod util;
 
 use crate::global::AppResources;
 use actix_web::middleware::Logger;
-use actix_web::{web, App, HttpServer};
+use actix_web::{App, HttpServer, web};
 use cache::create_redis_pool;
 use common::cfg::Settings;
-use flexi_logger::{
-    Age, Cleanup, Criterion, Duplicate, FileSpec, FlexiLoggerError, LevelFilter, Naming,
-};
+use flexi_logger::{Age, Cleanup, Criterion, Duplicate, FileSpec, Naming};
 use log::{error, info};
 use std::error::Error;
 use std::net::Ipv4Addr;
-use utoipa_actix_web::{scope, AppExt};
+use utoipa_actix_web::{AppExt, scope};
 use utoipa_swagger_ui::SwaggerUi;
 #[actix_web::main]
 async fn start(cfg: Settings) -> Result<(), Box<dyn Error>> {
