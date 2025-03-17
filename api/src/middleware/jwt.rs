@@ -1,5 +1,5 @@
 use crate::rsp::ApiResponse;
-use crate::rsp::code::JWT_TOKEN_ERR;
+use crate::rsp::code::{JWT_TOKEN_ERR, UNKNOWN_ERR};
 use crate::util;
 use crate::{global::AppResources, rsp::AppErrors};
 use actix_web::{
@@ -7,7 +7,7 @@ use actix_web::{
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
     error, web,
 };
-use futures_util::future::{LocalBoxFuture, Ready, err, ready};
+use futures_util::future::{LocalBoxFuture, Ready, ready};
 use serde_json::json;
 use std::task::{Context, Poll};
 
@@ -50,12 +50,20 @@ where
             return Box::pin(self.service.call(req));
         }
 
-        let resources = req
-            .app_data::<web::Data<AppResources>>()
-            .expect("cfg::Settings is not found")
-            .get_ref()
-            .clone();
-        let jwt_cfg = resources.cfg.jwt;
+        let resources = req.app_data::<web::Data<AppResources>>();
+        let resources = match resources {
+            Some(data) => data,
+            None => {
+                log::error!("无法读取配置文件内的数据");
+                return Box::pin(async {
+                    let msg = ApiResponse::error(UNKNOWN_ERR, "无法读取应用配置数据");
+                    let msg = json!(msg).to_string();
+                    Err(error::ErrorUnauthorized(msg))
+                });
+            }
+        };
+
+        let jwt_cfg = &resources.cfg.jwt;
 
         // 提取 Authorization 头
         let auth_header = req.headers().get(&jwt_cfg.header_name);

@@ -50,7 +50,7 @@ pub fn validat_token(
     cache: &cfg::Cache,
     jwt: &cfg::Jwt,
     token: String,
-) -> Result<(), AppErrors> {
+) -> Result<Claims, AppErrors> {
     let claims = parse_token(jwt, token.clone()).map_err(|e| AppErrors::JwtValidateErr {
         token: token.clone(),
         source: e,
@@ -71,7 +71,7 @@ pub fn validat_token(
                     token
                 )))
             } else {
-                Ok(())
+                Ok(claims)
             }
         }
     }
