@@ -8,7 +8,7 @@ use crate::{
     dto,
     global::AppResources,
     rsp::{ApiResponse, ApiResult, error_rsp, ok_rsp},
-    util::jwt::create_and_cache_token,
+    util::create_and_cache_token,
 };
 
 pub(super) fn register_api(c: &mut ServiceConfig) {
