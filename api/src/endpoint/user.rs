@@ -3,6 +3,7 @@ use crate::rsp::code::DATA_NOT_FIND_ERR;
 use crate::rsp::{ApiResponse, ApiResult, PageResult, error_rsp, ok_rsp};
 use crate::{dto, rsp};
 use actix_web::{get, post, web};
+use common::util::pwd_util;
 use db::entities::auth_user;
 use db::entities::prelude::AuthUser;
 use log::{debug, info};
@@ -97,9 +98,10 @@ pub async fn add_user(
         return error_rsp(DATA_NOT_FIND_ERR, format!("Email: {}", req.email));
     }
 
+    let pwd_hash = pwd_util::hash_pwd(&req.username);
     let x = auth_user::ActiveModel {
         username: Set(req.username.clone()),
-        password: Set(bcrypt::hash(req.password.clone(), bcrypt::DEFAULT_COST).unwrap()),
+        password: Set(pwd_hash),
         email: Set(req.email.clone()),
         ..Default::default()
     };
