@@ -58,7 +58,7 @@ where
                 return Box::pin(async {
                     let msg = ApiResponse::error(UNKNOWN_ERR, "无法读取应用配置数据");
                     let msg = json!(msg).to_string();
-                    Err(error::ErrorUnauthorized(msg))
+                    Err(error::ErrorInternalServerError(msg))
                 });
             }
         };
