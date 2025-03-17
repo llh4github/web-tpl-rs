@@ -293,7 +293,7 @@ dependencies = [
  "common",
  "db",
  "flexi_logger",
-    "futures-util",
+ "futures-util",
  "jsonwebtoken",
  "log",
  "r2d2",
@@ -691,7 +691,7 @@ dependencies = [
  "serde",
  "serde_json",
  "toml",
-    "winnow",
+ "winnow",
  "yaml-rust2",
 ]
 
@@ -1187,9 +1187,9 @@ version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "162ee34ebcb7c64a8abebc059ce0fee27c2262618d7b60ed8faf72fef13c3650"
 dependencies = [
-    "proc-macro2",
-    "quote",
-    "syn 2.0.98",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.98",
 ]
 
 [[package]]
@@ -1212,7 +1212,7 @@ checksum = "9fa08315bb612088cc391249efdc3bc77536f16c91f6cf495e6fbe85b20a4a81"
 dependencies = [
  "futures-core",
  "futures-io",
-    "futures-macro",
+ "futures-macro",
  "futures-sink",
  "futures-task",
  "memchr",
@@ -2602,7 +2602,7 @@ checksum = "4e310ef0e1b6eeb79169a1171daf9abcb87a2e17c03bee2c4bb100b55c75409f"
 dependencies = [
  "cfg-if",
  "ordered-multimap",
-    "trim-in-place",
+ "trim-in-place",
 ]
 
 [[package]]
@@ -3025,7 +3025,7 @@ dependencies = [
  "futures-io",
  "futures-util",
  "hashbrown 0.15.2",
-    "hashlink",
+ "hashlink",
  "indexmap",
  "log",
  "memchr",
@@ -4030,7 +4030,7 @@ checksum = "232bdb534d65520716bef0bbb205ff8f2db72d807b19c0bc3020853b92a0cd4b"
 dependencies = [
  "arraydeque",
  "encoding_rs",
-    "hashlink",
+ "hashlink",
 ]
 
 [[package]]
