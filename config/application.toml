@@ -20,6 +20,12 @@ header_prefix = "Bearer "
 issuer = "web-tpl"
 secret = "KZLQ7e1R*OmK^s1Yi5qqqe5yhN9VaYbdqfOn*8CxoA"
 expiration = 3600
+anno_url = [
+    "/api/login",
+    "/api/demo01/{*p}",
+    "/swagger-ui/{*p}",
+    "/api-docs/openapi.json"
+]
 [cache]
 prefix = "web-tpl:cache"
 ttl = 3600

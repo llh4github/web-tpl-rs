@@ -6,7 +6,7 @@ mod keys;
 mod standalone;
 
 use common::cfg::RedisMode;
-use r2d2::{ManageConnection, Pool};
+use r2d2::Pool;
 use redis::RedisError;
 use std::fmt;
 

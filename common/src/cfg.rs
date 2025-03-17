@@ -28,10 +28,11 @@ pub struct Cache {
 #[allow(unused)]
 pub struct Jwt {
     pub header_name: String,
-    pub header_prefix:String,
+    pub header_prefix: String,
     pub issuer: String,
     pub secret: String,
     pub expiration: i64,
+    pub anno_url: Vec<String>,
 }
 
 /// URL format: `{redis|rediss}://[<username>][:<password>@]<hostname>[:port][/<db>]`

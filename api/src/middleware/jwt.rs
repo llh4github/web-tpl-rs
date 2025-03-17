@@ -1,14 +1,15 @@
-use crate::rsp::ApiResponse;
 use crate::rsp::code::{JWT_TOKEN_ERR, UNKNOWN_ERR};
+use crate::rsp::ApiResponse;
 use crate::util;
 use crate::{global::AppResources, rsp::AppErrors};
 use actix_web::{
-    Error,
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
-    error, web,
+    error,
+    web, Error,
 };
-use futures_util::future::{LocalBoxFuture, Ready, ready};
+use futures_util::future::{ready, LocalBoxFuture, Ready};
 use serde_json::json;
+use std::sync::OnceLock;
 use std::task::{Context, Poll};
 
 pub struct Jwt;
@@ -30,7 +31,7 @@ where
         ready(Ok(JwtService { service }))
     }
 }
-
+static MATCHER: OnceLock<matchit::Router<String>> = OnceLock::new();
 impl<S, B> Service<ServiceRequest> for JwtService<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
@@ -64,6 +65,21 @@ where
         };
 
         let jwt_cfg = &resources.cfg.jwt;
+        let matcher = MATCHER.get_or_init(|| {
+            let jwt_cfg = &resources.cfg.jwt;
+            let mut router = matchit::Router::new();
+            // log::debug!("uri( {:?} ) is anno", &jwt_cfg.anno_url);
+            for x in &jwt_cfg.anno_url {
+                router.insert(x.clone(), format!("value-{}", x)).unwrap();
+            }
+            router
+        });
+        let uri = req.uri().to_string();
+        let rs = matcher.at(&*uri);
+        log::debug!("match rs {:?}", rs);
+        if rs.is_ok() {
+            return Box::pin(self.service.call(req));
+        }
 
         // 提取 Authorization 头
         let auth_header = req.headers().get(&jwt_cfg.header_name);
@@ -94,9 +110,9 @@ where
                 });
             }
         };
-        let valiadte_result =
+        let validate_result =
             util::validat_token(&mut pool, &resources.cfg.cache, &jwt_cfg, token.clone());
-        match valiadte_result {
+        match validate_result {
             Ok(_) => {
                 let fut = self.service.call(req);
                 Box::pin(async move { fut.await })

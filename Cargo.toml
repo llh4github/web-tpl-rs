@@ -29,6 +29,7 @@ actix-web = "4"
 validator = "0.20"
 validator_derive = "0.20"
 futures-util = "0.3"
+matchit = "0.8"
 
 config = "0.15"
 log = "0.4"

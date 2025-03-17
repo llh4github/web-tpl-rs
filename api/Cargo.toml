@@ -10,6 +10,7 @@ cache = { path = "../cache" }
 redis = { workspace = true }
 sea-orm = { workspace = true }
 chrono = { workspace = true }
+matchit = { workspace = true }
 
 thiserror = { workspace = true }
 anyhow = { workspace = true }
