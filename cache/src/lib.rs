@@ -43,7 +43,7 @@ compile_error!("standalone 和 cluster 是互斥的，不能同时启用！");
 
 /// 避免IDE提示错误
 #[cfg(all(not(feature = "standalone"), not(feature = "cluster")))]
-impl ManageConnection for RedisConnectionManager {
+impl r2d2::ManageConnection for RedisConnectionManager {
     type Connection = redis::Connection;
     type Error = RedisError;
     fn connect(&self) -> Result<Self::Connection, Self::Error> {

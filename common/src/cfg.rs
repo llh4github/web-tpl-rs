@@ -1,12 +1,11 @@
-use crate::consts::DEV;
+use crate::consts::{DEV, PROD};
 use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 use std::env;
 
+/// 应用配置
 #[derive(Debug, Deserialize, Clone)]
-#[allow(unused)]
-pub struct Settings {
-    pub debug: bool,
+pub struct AppCfg {
     pub network: ApiNetwork,
     pub database: Database,
     pub redis: RedisMode,
@@ -64,6 +63,7 @@ pub struct Database {
     pub host: String,
     pub port: i32,
     pub database: String,
+    pub show_sql: bool,
 }
 impl Database {
     pub fn connection_string(&self) -> String {
@@ -74,7 +74,7 @@ impl Database {
     }
 }
 
-impl Settings {
+impl AppCfg {
     pub fn new() -> Result<Self, ConfigError> {
         // 从环境变量中获取运行模式
         let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| DEV.into());
@@ -84,14 +84,23 @@ impl Settings {
             .add_source(File::with_name("config/application").required(false))
             .add_source(Environment::with_prefix("app"));
 
-        // dev 环境下允许向上两级查找配置文件
-        let config = if run_mode.to_lowercase() == DEV {
-            config
-                .add_source(File::with_name("../config/application").required(false))
-                .add_source(File::with_name("../../config/application").required(false))
-        } else {
-            config
-        };
+        // 其他环境根据运行模式加载配置文件
+        let config: config::ConfigBuilder<config::builder::DefaultState> =
+            if run_mode.to_lowercase() != PROD {
+                // log not init, so use println
+                println!("run mode is : {}", run_mode);
+                config
+                    .add_source(
+                        File::with_name(format!("config/application-{}", run_mode).as_str())
+                            .required(false),
+                    )
+                    .add_source(
+                        File::with_name(format!("./application-{}", run_mode).as_str())
+                            .required(false),
+                    )
+            } else {
+                config
+            };
         config.build()?.try_deserialize()
     }
 }

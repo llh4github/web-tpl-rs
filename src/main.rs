@@ -1,10 +1,10 @@
-use common::cfg::Settings;
+use common::cfg::AppCfg;
 
 fn main() {
-    let cfg = Settings::new();
+    let cfg = AppCfg::new();
     match cfg {
         Ok(c) => {
-            api::main(c);
+            api::main(&c);
         }
         Err(e) => {
             println!("读取配置失败 {:?}", e);
