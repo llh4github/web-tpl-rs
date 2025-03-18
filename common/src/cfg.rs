@@ -78,8 +78,6 @@ impl Settings {
     pub fn new() -> Result<Self, ConfigError> {
         // 从环境变量中获取运行模式
         let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| DEV.into());
-        // log not init, so use println
-        println!("run mode is : {}", run_mode);
 
         let config = Config::builder()
             .add_source(File::with_name("./application").required(false))
@@ -89,6 +87,8 @@ impl Settings {
         // 其他环境根据运行模式加载配置文件
         let config: config::ConfigBuilder<config::builder::DefaultState> =
             if run_mode.to_lowercase() != PROD {
+                // log not init, so use println
+                println!("run mode is : {}", run_mode);
                 config
                     .add_source(
                         File::with_name(format!("config/application-{}", run_mode).as_str())
