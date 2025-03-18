@@ -3,6 +3,38 @@ use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 use std::env;
 
+#[derive(Debug, Deserialize, Clone)]
+#[allow(unused)]
+pub struct Settings {
+    pub debug: bool,
+    pub network: ApiNetwork,
+    pub database: Database,
+    pub redis: RedisMode,
+    pub jwt: Jwt,
+    pub cache: Cache,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Cache {
+    /// 缓存前缀
+    pub prefix: String,
+    /// 缓存过期时间 秒
+    pub ttl: i64,
+    /// 缓存时间波动值 秒
+    pub ttl_delta: i64,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[allow(unused)]
+pub struct Jwt {
+    pub header_name: String,
+    pub header_prefix: String,
+    pub issuer: String,
+    pub secret: String,
+    pub expiration: i64,
+    pub anno_url: Vec<String>,
+}
+
 /// URL format: `{redis|rediss}://[<username>][:<password>@]<hostname>[:port][/<db>]`
 ///
 /// - Basic: `redis://127.0.0.1:6379`
@@ -18,21 +50,13 @@ pub enum RedisMode {
     Standalone { node: String },
     Cluster { nodes: Vec<String> },
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct ApiNetwork {
     pub port: u16,
     pub prefix: String,
 }
-#[derive(Debug, Deserialize)]
-#[allow(unused)]
-pub struct Settings {
-    pub debug: bool,
-    pub network: ApiNetwork,
-    pub database: Database,
-    pub redis: RedisMode,
-}
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Database {
     pub username: String,

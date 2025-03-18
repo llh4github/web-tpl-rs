@@ -2,6 +2,24 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use validator_derive::Validate;
 
+/// User Login Request Dto
+#[derive(Deserialize, Serialize, Debug, ToSchema, Validate)]
+pub struct LoginReq {
+    /// 用户名
+    #[validate(length(min = 1, max = 20))]
+    pub username: String,
+
+    /// 密码
+    #[validate(length(min = 1, max = 20))]
+    pub password: String,
+}
+/// User Login Response Dto
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
+pub struct LoginToken {
+    /// 登录成功后的token
+    pub token: String,
+}
+
 /// User Add Request Dto
 #[derive(Deserialize, Serialize, Debug, ToSchema, Validate)]
 pub struct AddReq {

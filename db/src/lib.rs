@@ -4,7 +4,7 @@ use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr};
 pub mod entities;
 
 pub async fn db_connection(
-    cfg: cfg::Database,
+    cfg: &cfg::Database,
     show_sql: bool,
 ) -> Result<DatabaseConnection, DbErr> {
     let conn = cfg.connection_string();

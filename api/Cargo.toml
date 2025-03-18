@@ -10,11 +10,12 @@ cache = { path = "../cache" }
 redis = { workspace = true }
 sea-orm = { workspace = true }
 chrono = { workspace = true }
+matchit = { workspace = true }
 
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 jsonwebtoken = { workspace = true }
-
+futures-util = { workspace = true }
 actix-web = { workspace = true }
 utoipa = { workspace = true }
 utoipa-swagger-ui = { workspace = true }

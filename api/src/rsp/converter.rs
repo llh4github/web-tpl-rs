@@ -1,16 +1,35 @@
 //! 转换器
 //! 将各种错误转换为ApiResponse
+use crate::rsp::ApiResponse;
 use crate::rsp::code::{DB_ERR, POOL_ERR};
 use crate::rsp::types::{ErrorDetail, FieldError};
-use crate::rsp::ApiResponse;
 use redis::RedisError;
 use sea_orm::DbErr;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use validator::ValidationErrors;
 
-use super::code::{PARAMS_VALIDATE_ERR, REDIS_ERR};
+use super::AppErrors;
+use super::code::{JWT_TOKEN_ERR, PARAMS_VALIDATE_ERR, REDIS_ERR, UNKNOWN_ERR};
+
+impl From<AppErrors> for ApiResponse<Value> {
+    fn from(errors: AppErrors) -> Self {
+        let (code, msg, data) = match errors {
+            AppErrors::CommonErr(msg) => (UNKNOWN_ERR, msg, Value::Null),
+            AppErrors::JwtValidateErr {
+                token: _,
+                source: _,
+            } => (JWT_TOKEN_ERR, "凭证无效".to_string(), Value::Null),
+            AppErrors::JwtCreateErr(_error) => {
+                (JWT_TOKEN_ERR, "Token创建失败".to_string(), Value::Null)
+            }
+            AppErrors::PoolErr(_error) => (POOL_ERR, "资源池化出错".to_string(), Value::Null),
+            AppErrors::RedisErr(_redis_error) => (REDIS_ERR, "redis出错".to_string(), Value::Null),
+        };
+        ApiResponse::error_with_data(code, msg, data)
+    }
+}
 
 fn convert_params(params: HashMap<Cow<'static, str>, Value>) -> Option<Value> {
     let json_value = serde_json::to_value(params).unwrap_or(Value::Null);
@@ -34,6 +53,7 @@ pub(crate) fn convert_validation_errors(err: &ValidationErrors) -> Value {
         .collect();
     json!(error_list)
 }
+
 impl From<ValidationErrors> for ApiResponse<Value> {
     fn from(errors: ValidationErrors) -> Self {
         let errors_json = convert_validation_errors(&errors);

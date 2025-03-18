@@ -1,17 +1,13 @@
 //! 响应包装器
 //! 用于包装响应数据，统一响应格式
-use crate::rsp::converter::convert_validation_errors;
-use actix_web::http::header::TryIntoHeaderValue;
 use actix_web::http::StatusCode;
 use actix_web::{HttpRequest, HttpResponse, Responder, ResponseError};
 use chrono::Utc;
 use common::{OK_STR, SUCCESS_STR};
 use serde::Serialize;
 use serde_json::Value;
-use std::fmt::{Debug, Display};
 use thiserror::Error;
 use utoipa::ToSchema;
-use validator::ValidationErrors;
 
 #[derive(Serialize, ToSchema, Error, Debug)]
 #[error("ApiResponse: {code} {msg} {success} {data}")]

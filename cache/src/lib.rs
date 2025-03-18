@@ -1,16 +1,19 @@
 #[cfg(feature = "cluster")]
 mod cluster;
 
+mod keys;
 #[cfg(feature = "standalone")]
 mod standalone;
 
 use common::cfg::RedisMode;
-use r2d2::{ManageConnection, Pool};
-use redis::{ConnectionLike, RedisError};
+use r2d2::Pool;
+use redis::RedisError;
 use std::fmt;
 
+pub use keys::{gen_key, gen_key_with_prefix};
+
 /// 创建 Redis 连接池
-pub fn create_redis_pool(config: RedisMode) -> Result<Pool<RedisConnectionManager>, RedisError> {
+pub fn create_redis_pool(config: &RedisMode) -> Result<Pool<RedisConnectionManager>, RedisError> {
     let manager = RedisConnectionManager::new(config);
     let pool = Pool::builder().build(manager).unwrap();
     Ok(pool)
@@ -22,8 +25,10 @@ pub struct RedisConnectionManager {
     config: RedisMode,
 }
 impl RedisConnectionManager {
-    pub fn new(config: RedisMode) -> Self {
-        Self { config }
+    pub fn new(config: &RedisMode) -> Self {
+        Self {
+            config: config.clone(),
+        }
     }
 }
 
