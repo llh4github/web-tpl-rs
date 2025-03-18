@@ -4,19 +4,16 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(
-    Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, utoipa :: ToSchema,
+    Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, utoipa::ToSchema,
 )]
-#[sea_orm(table_name = "auth_user")]
+#[sea_orm(table_name = "auth_role")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
+    #[sea_orm(column_type = "Text")]
+    pub name: String,
     #[sea_orm(column_type = "Text", unique)]
-    pub username: String,
-    #[sea_orm(column_type = "Text")]
-    #[serde(skip)]
-    pub password: String,
-    #[sea_orm(column_type = "Text")]
-    pub email: String,
+    pub code: String,
     pub created_at: Option<DateTime>,
     pub updated_at: Option<DateTime>,
     pub created_by: Option<i32>,
@@ -35,12 +32,12 @@ impl Related<super::link_user_role::Entity> for Entity {
     }
 }
 
-impl Related<super::auth_role::Entity> for Entity {
+impl Related<super::auth_user::Entity> for Entity {
     fn to() -> RelationDef {
-        super::link_user_role::Relation::AuthRole.def()
+        super::link_user_role::Relation::AuthUser.def()
     }
     fn via() -> Option<RelationDef> {
-        Some(super::link_user_role::Relation::AuthUser.def().rev())
+        Some(super::link_user_role::Relation::AuthRole.def().rev())
     }
 }
 

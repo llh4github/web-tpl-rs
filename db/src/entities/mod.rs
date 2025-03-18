@@ -2,4 +2,6 @@
 
 pub mod prelude;
 
+pub mod auth_role;
 pub mod auth_user;
+pub mod link_user_role;
