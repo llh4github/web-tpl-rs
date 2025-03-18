@@ -1,15 +1,15 @@
-use crate::rsp::ApiResponse;
 use crate::rsp::code::{JWT_TOKEN_ERR, UNKNOWN_ERR};
-use crate::util;
+use crate::rsp::ApiResponse;
 use crate::rsp::AppErrors;
+use crate::util;
 use actix_web::{
-    Error,
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
-    error, web,
+    error,
+    web, Error,
 };
 use cache::RedisConnectionManager;
 use common::cfg::AppCfg;
-use futures_util::future::{LocalBoxFuture, Ready, ready};
+use futures_util::future::{ready, LocalBoxFuture, Ready};
 use r2d2::Pool;
 use serde_json::json;
 use std::sync::OnceLock;
@@ -113,7 +113,7 @@ where
                 });
             }
         };
-        let validate_result = util::validat_token(&mut pool, &cfg.cache, &jwt_cfg, token.clone());
+        let validate_result = util::validate_token(&mut pool, &cfg.cache, &jwt_cfg, token.clone());
         match validate_result {
             Ok(_) => {
                 let fut = self.service.call(req);

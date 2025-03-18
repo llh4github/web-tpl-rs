@@ -1,5 +1,6 @@
 use crate::rsp::code::DATA_NOT_FIND_ERR;
-use crate::rsp::{ApiResponse, ApiResult, PageResult, error_rsp, ok_rsp};
+use crate::rsp::{error_rsp, ok_rsp, ApiResponse, ApiResult, PageResult};
+use crate::util::CacheKeyUtil;
 use crate::{dto, rsp};
 use actix_web::{get, post, web};
 use cache::RedisConnectionManager;
@@ -9,9 +10,9 @@ use db::entities::auth_user;
 use db::entities::prelude::AuthUser;
 use log::debug;
 use r2d2::Pool;
-use sea_orm::ActiveValue::Set;
 use sea_orm::sea_query::SimpleExpr;
 use sea_orm::sqlx::types::chrono;
+use sea_orm::ActiveValue::Set;
 use sea_orm::{
     ActiveModelTrait, Condition, DatabaseConnection, EntityTrait, IntoActiveModel, TransactionTrait,
 };
@@ -21,7 +22,7 @@ use serde_json::json;
 use utoipa_actix_web::service_config::ServiceConfig;
 use validator::Validate;
 
-const REDIS_KEY: &str = "web-tpl:cache:user";
+const REDIS_KEY: &str = "user-module";
 
 pub(super) fn register_api(c: &mut ServiceConfig) {
     c.service(find_user);
@@ -44,13 +45,13 @@ pub(super) fn register_api(c: &mut ServiceConfig) {
 pub async fn find_user(
     id: web::Path<i32>,
     cfg: web::Data<AppCfg>,
+    cache_key_util: web::Data<CacheKeyUtil>,
     db_inject: web::Data<DatabaseConnection>,
     redis_inject: web::Data<Pool<RedisConnectionManager>>,
 ) -> ApiResult<Option<auth_user::Model>> {
+    let key = cache_key_util.cache_key_i32(REDIS_KEY, *id);
     let mut pool = redis_inject.get()?;
-    let cached: Option<String> = redis::cmd("GET")
-        .arg(format!("{}:{}", REDIS_KEY, *id))
-        .query(&mut pool)?;
+    let cached: Option<String> = redis::cmd("GET").arg(&key).query(&mut pool)?;
     if let Some(cached) = cached {
         debug!("Cache found. user-id {}", *id);
         let cached: Option<auth_user::Model> = serde_json::from_str(&cached).unwrap();
@@ -62,7 +63,7 @@ pub async fn find_user(
     let db = db_inject.get_ref();
     let option: Option<auth_user::Model> = AuthUser::find_by_id(*id).one(db).await?;
     redis::cmd("SET")
-        .arg(format!("{}:{}", REDIS_KEY, *id))
+        .arg(&key)
         .arg(json!(option).to_string())
         .arg("EX")
         .arg(cfg.cache.ttl)
