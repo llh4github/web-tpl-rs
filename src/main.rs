@@ -1,7 +1,7 @@
-use common::cfg::AppCfgs;
+use common::cfg::AppCfg;
 
 fn main() {
-    let cfg = AppCfgs::new();
+    let cfg = AppCfg::new();
     match cfg {
         Ok(c) => {
             api::main(&c);

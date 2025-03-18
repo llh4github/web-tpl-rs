@@ -3,8 +3,9 @@ use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 use std::env;
 
+/// 应用配置
 #[derive(Debug, Deserialize, Clone)]
-pub struct AppCfgs {
+pub struct AppCfg {
     pub network: ApiNetwork,
     pub database: Database,
     pub redis: RedisMode,
@@ -73,7 +74,7 @@ impl Database {
     }
 }
 
-impl AppCfgs {
+impl AppCfg {
     pub fn new() -> Result<Self, ConfigError> {
         // 从环境变量中获取运行模式
         let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| DEV.into());

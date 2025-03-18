@@ -1,13 +1,16 @@
-use crate::rsp::code::{JWT_TOKEN_ERR, UNKNOWN_ERR};
 use crate::rsp::ApiResponse;
+use crate::rsp::code::{JWT_TOKEN_ERR, UNKNOWN_ERR};
 use crate::util;
 use crate::{global::AppResources, rsp::AppErrors};
 use actix_web::{
+    Error,
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
-    error,
-    web, Error,
+    error, web,
 };
-use futures_util::future::{ready, LocalBoxFuture, Ready};
+use cache::RedisConnectionManager;
+use common::cfg::AppCfg;
+use futures_util::future::{LocalBoxFuture, Ready, ready};
+use r2d2::Pool;
 use serde_json::json;
 use std::sync::OnceLock;
 use std::task::{Context, Poll};
@@ -51,22 +54,26 @@ where
             return Box::pin(self.service.call(req));
         }
 
-        let resources = req.app_data::<web::Data<AppResources>>();
-        let resources = match resources {
+        let cfg = req.app_data::<web::Data<AppCfg>>();
+        let cfg = match cfg {
             Some(data) => data,
             None => {
                 log::error!("无法读取配置文件内的数据");
-                return Box::pin(async {
-                    let msg = ApiResponse::error(UNKNOWN_ERR, "无法读取应用配置数据");
-                    let msg = json!(msg).to_string();
-                    Err(error::ErrorInternalServerError(msg))
-                });
+                return Box::pin(async { error_json("无法读取配置文件内的数据") });
+            }
+        };
+        let redis_pool = req.app_data::<web::Data<Pool<RedisConnectionManager>>>();
+        let redis_pool = match redis_pool {
+            Some(data) => data,
+            None => {
+                log::error!("无法获取 redis 连接池");
+                return Box::pin(async { error_json("无法获取 redis 连接池") });
             }
         };
 
-        let jwt_cfg = &resources.cfg.jwt;
+        let jwt_cfg = &cfg.jwt;
         let matcher = MATCHER.get_or_init(|| {
-            let jwt_cfg = &resources.cfg.jwt;
+            // let jwt_cfg = &cfg.jwt;
             let mut router = matchit::Router::new();
             // log::debug!("uri( {:?} ) is anno", &jwt_cfg.anno_url);
             for x in &jwt_cfg.anno_url {
@@ -76,7 +83,7 @@ where
         });
         let uri = req.uri().to_string();
         let rs = matcher.at(&*uri);
-        log::debug!("match rs {:?}", rs);
+        // log::debug!("match rs {:?}", rs);
         if rs.is_ok() {
             return Box::pin(self.service.call(req));
         }
@@ -91,15 +98,11 @@ where
         let token = match token {
             Some(t) => t,
             None => {
-                return Box::pin(async {
-                    let msg = ApiResponse::error(JWT_TOKEN_ERR, "无Token信息");
-                    let msg = json!(msg).to_string();
-                    Err(error::ErrorUnauthorized(msg))
-                });
+                return Box::pin(async { error_json("无Token信息") });
             }
         };
 
-        let mut pool = match resources.redis_pool.get() {
+        let mut pool = match redis_pool.get() {
             Ok(p) => p,
             Err(e) => {
                 log::error!("redis pool error : {}", e);
@@ -110,8 +113,7 @@ where
                 });
             }
         };
-        let validate_result =
-            util::validat_token(&mut pool, &resources.cfg.cache, &jwt_cfg, token.clone());
+        let validate_result = util::validat_token(&mut pool, &cfg.cache, &jwt_cfg, token.clone());
         match validate_result {
             Ok(_) => {
                 let fut = self.service.call(req);
@@ -122,23 +124,19 @@ where
                 match error {
                     AppErrors::JwtValidateErr { token: _, source } => match source.kind() {
                         jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
-                            let msg = ApiResponse::error(JWT_TOKEN_ERR, "Token已过期");
-                            let msg = json!(msg).to_string();
-                            Err(error::ErrorUnauthorized(msg))
+                            error_json("Token已过期")
                         }
-                        _ => {
-                            let msg = ApiResponse::error(JWT_TOKEN_ERR, "无效 Token");
-                            let msg = json!(msg).to_string();
-                            Err(error::ErrorUnauthorized(msg))
-                        }
+                        _ => error_json("无效 Token"),
                     },
-                    _ => {
-                        let msg = ApiResponse::error(JWT_TOKEN_ERR, "无效 Token");
-                        let msg = json!(msg).to_string();
-                        Err(error::ErrorUnauthorized(msg))
-                    }
+                    _ => error_json("无效 Token"),
                 }
             }),
         }
     }
+}
+
+fn error_json<T>(msg: &str) -> Result<T, Error> {
+    let msg = ApiResponse::error(UNKNOWN_ERR, msg);
+    let msg = json!(msg).to_string();
+    Err(error::ErrorInternalServerError(msg))
 }

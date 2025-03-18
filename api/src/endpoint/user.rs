@@ -1,16 +1,20 @@
-use crate::global::AppResources;
 use crate::rsp::code::DATA_NOT_FIND_ERR;
 use crate::rsp::{ApiResponse, ApiResult, PageResult, error_rsp, ok_rsp};
 use crate::{dto, rsp};
 use actix_web::{get, post, web};
+use cache::RedisConnectionManager;
+use common::cfg::AppCfg;
 use common::util::pwd_util;
 use db::entities::auth_user;
 use db::entities::prelude::AuthUser;
 use log::debug;
+use r2d2::Pool;
 use sea_orm::ActiveValue::Set;
 use sea_orm::sea_query::SimpleExpr;
 use sea_orm::sqlx::types::chrono;
-use sea_orm::{ActiveModelTrait, Condition, EntityTrait, IntoActiveModel, TransactionTrait};
+use sea_orm::{
+    ActiveModelTrait, Condition, DatabaseConnection, EntityTrait, IntoActiveModel, TransactionTrait,
+};
 use sea_orm::{ColumnTrait, QueryOrder};
 use sea_orm::{PaginatorTrait, QueryFilter};
 use serde_json::json;
@@ -39,9 +43,11 @@ pub(super) fn register_api(c: &mut ServiceConfig) {
 #[get("/user/{id}")]
 pub async fn find_user(
     id: web::Path<i32>,
-    data: web::Data<AppResources>,
+    cfg: web::Data<AppCfg>,
+    db_inject: web::Data<DatabaseConnection>,
+    redis_inject: web::Data<Pool<RedisConnectionManager>>,
 ) -> ApiResult<Option<auth_user::Model>> {
-    let mut pool = data.redis_pool.get()?;
+    let mut pool = redis_inject.get()?;
     let cached: Option<String> = redis::cmd("GET")
         .arg(format!("{}:{}", REDIS_KEY, *id))
         .query(&mut pool)?;
@@ -53,13 +59,13 @@ pub async fn find_user(
         debug!("Cache not found, run db query. user-id {}", *id);
     }
 
-    let db = &data.db;
+    let db = db_inject.get_ref();
     let option: Option<auth_user::Model> = AuthUser::find_by_id(*id).one(db).await?;
     redis::cmd("SET")
         .arg(format!("{}:{}", REDIS_KEY, *id))
         .arg(json!(option).to_string())
         .arg("EX")
-        .arg(60 * 60)
+        .arg(cfg.cache.ttl)
         .exec(&mut pool)?;
 
     ok_rsp(option)
@@ -75,10 +81,10 @@ pub async fn find_user(
 #[post("/user")]
 pub async fn add_user(
     req: web::Json<dto::user::AddReq>,
-    data: web::Data<AppResources>,
+    db_inject: web::Data<DatabaseConnection>,
 ) -> ApiResult<Option<auth_user::Model>> {
     req.validate()?;
-    let txn = data.db.begin().await?;
+    let txn = db_inject.get_ref().begin().await?;
     let option: Option<auth_user::Model> = AuthUser::find()
         .filter(Condition::all().add(auth_user::Column::Username.eq(req.username.clone())))
         .one(&txn)
@@ -120,9 +126,9 @@ pub async fn add_user(
 #[post("/user/page")]
 pub async fn page_query(
     req: web::Json<dto::user::PageReq>,
-    data: web::Data<AppResources>,
+    db_inject: web::Data<DatabaseConnection>,
 ) -> rsp::ApiResult<PageResult<auth_user::Model>> {
-    let db = &data.db;
+    let db = db_inject.get_ref();
     let cond = Condition::all()
         .add_option(req.username.as_ref().map_or(None::<SimpleExpr>, |v| {
             Some(auth_user::Column::Username.contains(v.clone()))
@@ -155,9 +161,9 @@ pub async fn page_query(
 #[post("/user/update/pwd")]
 pub async fn update_pwd(
     req: web::Json<dto::user::UpdatePwd>,
-    data: web::Data<AppResources>,
+    db_inject: web::Data<DatabaseConnection>,
 ) -> ApiResult<bool> {
-    let db = &data.db;
+    let db = db_inject.get_ref();
     let txn = db.begin().await?;
     let option: Option<auth_user::Model> = AuthUser::find_by_id(req.id).one(&txn).await?;
     match option {

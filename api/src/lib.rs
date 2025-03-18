@@ -9,7 +9,7 @@ use actix_web::middleware::Logger;
 use actix_web::rt::net;
 use actix_web::{App, HttpServer, web};
 use cache::create_redis_pool;
-use common::cfg::AppCfgs;
+use common::cfg::AppCfg;
 use flexi_logger::{Age, Cleanup, Criterion, Duplicate, FileSpec, Naming};
 use log::{error, info};
 use std::error::Error;
@@ -18,7 +18,7 @@ use utoipa_actix_web::{AppExt, scope};
 use utoipa_swagger_ui::SwaggerUi;
 
 #[actix_web::main]
-async fn start(cfg: &AppCfgs) -> Result<(), Box<dyn Error>> {
+async fn start(cfg: &AppCfg) -> Result<(), Box<dyn Error>> {
     let db_conn = db::db_connection(&cfg.database).await?;
     let redis_pool = create_redis_pool(&cfg.redis)?;
     let setting = cfg.clone();
@@ -48,7 +48,7 @@ async fn start(cfg: &AppCfgs) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn main(cfg: &AppCfgs) {
+pub fn main(cfg: &AppCfg) {
     flexi_logger::Logger::try_with_env_or_str("debug")
         .unwrap()
         .rotate(

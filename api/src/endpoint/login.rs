@@ -1,12 +1,12 @@
 use actix_web::{post, web};
-use common::util::pwd_util;
+use cache::RedisConnectionManager;
+use common::{cfg::AppCfg, util::pwd_util};
 use db::entities::{auth_user, prelude::AuthUser};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use r2d2::Pool;
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use utoipa_actix_web::service_config::ServiceConfig;
-
 use crate::{
     dto,
-    global::AppResources,
     rsp::{ApiResponse, ApiResult, error_rsp, ok_rsp},
     util::create_and_cache_token,
 };
@@ -29,9 +29,11 @@ const LOGIN_FAIL_MSG: &str = "用户名或密码不正确";
 #[post("/login")]
 async fn login(
     req: web::Json<dto::user::LoginReq>,
-    data: web::Data<AppResources>,
+    cfg: web::Data<AppCfg>,
+    db_inject: web::Data<DatabaseConnection>,
+    redis_inject: web::Data<Pool<RedisConnectionManager>>,
 ) -> ApiResult<dto::user::LoginToken> {
-    let db = &data.db;
+    let db = db_inject.get_ref();
     let option: Option<auth_user::Model> = AuthUser::find()
         .filter(auth_user::Column::Username.eq(req.username.clone()))
         .one(db)
@@ -47,7 +49,7 @@ async fn login(
         log::debug!("username( {} ) password is not matched.", req.username);
         return error_rsp(LOGIN_FAIL, LOGIN_FAIL_MSG);
     }
-    let mut pool = data.redis_pool.get()?;
-    let token = create_and_cache_token(&mut pool, user.username, &data.cfg.jwt, &data.cfg.cache)?;
+    let mut pool = redis_inject.get()?;
+    let token = create_and_cache_token(&mut pool, user.username, &cfg.jwt, &cfg.cache)?;
     ok_rsp(dto::user::LoginToken { token })
 }
