@@ -78,7 +78,8 @@ impl Settings {
     pub fn new() -> Result<Self, ConfigError> {
         // 从环境变量中获取运行模式
         let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| DEV.into());
-        log::info!("当前运行模式: {}", run_mode);
+        // log not init, so use println
+        println!("run mode is : {}", run_mode);
 
         let config = Config::builder()
             .add_source(File::with_name("./application").required(false))
