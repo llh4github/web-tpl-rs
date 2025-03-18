@@ -4,9 +4,7 @@ use serde::Deserialize;
 use std::env;
 
 #[derive(Debug, Deserialize, Clone)]
-#[allow(unused)]
-pub struct Settings {
-    pub debug: bool,
+pub struct AppCfgs {
     pub network: ApiNetwork,
     pub database: Database,
     pub redis: RedisMode,
@@ -64,6 +62,7 @@ pub struct Database {
     pub host: String,
     pub port: i32,
     pub database: String,
+    pub show_sql: bool,
 }
 impl Database {
     pub fn connection_string(&self) -> String {
@@ -74,7 +73,7 @@ impl Database {
     }
 }
 
-impl Settings {
+impl AppCfgs {
     pub fn new() -> Result<Self, ConfigError> {
         // 从环境变量中获取运行模式
         let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| DEV.into());
