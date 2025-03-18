@@ -1,12 +1,10 @@
 pub(crate) mod dto;
 mod endpoint;
-pub(crate) mod global;
 mod middleware;
 pub(crate) mod rsp;
 mod util;
 
 use actix_web::middleware::Logger;
-use actix_web::rt::net;
 use actix_web::{App, HttpServer, web};
 use cache::create_redis_pool;
 use common::cfg::AppCfg;

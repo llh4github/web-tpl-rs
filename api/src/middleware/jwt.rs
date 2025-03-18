@@ -1,7 +1,7 @@
 use crate::rsp::ApiResponse;
 use crate::rsp::code::{JWT_TOKEN_ERR, UNKNOWN_ERR};
 use crate::util;
-use crate::{global::AppResources, rsp::AppErrors};
+use crate::rsp::AppErrors;
 use actix_web::{
     Error,
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
