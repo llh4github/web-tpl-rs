@@ -33,7 +33,6 @@ async fn start(cfg: AppCfg) -> Result<(), Box<dyn Error>> {
             .app_data(web::Data::new(setting))
             .app_data(web::Data::new(db_conn))
             .app_data(web::Data::new(redis_pool.clone()))
-            .app_data(web::Data::new(util::CacheKeyUtil::new(cfg.clone())))
             .app_data(web::Data::new(ReidsUtil::new(
                 cfg.clone(),
                 redis_pool.clone(),
