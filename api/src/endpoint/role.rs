@@ -1,6 +1,6 @@
 use crate::{
     dto::{self},
-    rsp::{ApiResponse, ApiResult, code::DATA_EXIST_ERR, error_rsp, ok_rsp},
+    rsp::{ApiResponse, ApiResult, PageResult, code::DATA_EXIST_ERR, error_rsp, ok_rsp},
     util::ReidsUtil,
 };
 use actix_web::{get, post, web};
@@ -8,7 +8,8 @@ use chrono::Utc;
 use db::entities::{auth_role, prelude::AuthRole};
 use sea_orm::{
     ActiveValue::Set, ColumnTrait as _, Condition, DatabaseConnection, EntityTrait,
-    QueryFilter as _, TransactionTrait as _,
+    PaginatorTrait as _, QueryFilter as _, QueryOrder, TransactionTrait as _,
+    sea_query::SimpleExpr,
 };
 use utoipa_actix_web::service_config::ServiceConfig;
 use validator::Validate;
@@ -16,6 +17,7 @@ use validator::Validate;
 pub(super) fn register_api(c: &mut ServiceConfig) {
     c.service(get_role);
     c.service(add_role);
+    c.service(page_query);
 }
 
 const REDIS_KEY: &str = "role-module";
@@ -83,4 +85,42 @@ async fn add_role(
     txn.commit().await?;
 
     ok_rsp(Some(model))
+}
+
+/// 分页查询
+#[utoipa::path(
+    post,
+    path = "/role/page",
+    request_body = dto::role::PageReq,
+    responses((status = OK, body = ApiResponse<PageResult<auth_role::Model>>)),
+    tag = "角色管理模块"
+)]
+#[post("/role/page")]
+async fn page_query(
+    req: web::Json<dto::role::PageReq>,
+    db_inject: web::Data<DatabaseConnection>,
+) -> ApiResult<PageResult<auth_role::Model>> {
+    let cond = Condition::all()
+        .add_option(req.code.as_ref().map_or(None::<SimpleExpr>, |v| {
+            Some(auth_role::Column::Code.contains(v))
+        }))
+        .add_option(req.name.as_ref().map_or(None::<SimpleExpr>, |v| {
+            Some(auth_role::Column::Name.contains(v))
+        }));
+
+    let query = AuthRole::find()
+        .filter(cond)
+        .order_by_desc(auth_role::Column::UpdatedAt);
+
+    let db = db_inject.get_ref();
+    let paginator = query.paginate(db, req.param.size);
+    let total_page = paginator.num_pages().await?;
+    let total_ele = paginator.num_items().await?;
+    let list: Vec<auth_role::Model> = paginator.fetch_page(req.param.page - 1).await?;
+    let rs = PageResult {
+        total_page,
+        total_ele,
+        data: list,
+    };
+    ok_rsp(rs)
 }
