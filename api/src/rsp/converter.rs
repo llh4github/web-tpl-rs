@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use validator::ValidationErrors;
 
 use super::AppErrors;
-use super::code::{JWT_TOKEN_ERR, PARAMS_VALIDATE_ERR, REDIS_ERR, UNKNOWN_ERR};
+use super::code::{JWT_TOKEN_ERR, PARAMS_VALIDATE_ERR, REDIS_ERR, SERDE_JSON_ERR, UNKNOWN_ERR};
 
 impl From<AppErrors> for ApiResponse<Value> {
     fn from(errors: AppErrors) -> Self {
@@ -26,6 +26,12 @@ impl From<AppErrors> for ApiResponse<Value> {
             }
             AppErrors::PoolErr(_error) => (POOL_ERR, "资源池化出错".to_string(), Value::Null),
             AppErrors::RedisErr(_redis_error) => (REDIS_ERR, "redis出错".to_string(), Value::Null),
+            AppErrors::SerdeJsonErr(_error) => (
+                SERDE_JSON_ERR,
+                "序列化或反序列化出错".to_string(),
+                Value::Null,
+            ),
+            // _ => (UNKNOWN_ERR, "未知错误".to_string(), Value::Null),
         };
         ApiResponse::error_with_data(code, msg, data)
     }

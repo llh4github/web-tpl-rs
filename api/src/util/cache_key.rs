@@ -1,5 +1,6 @@
 use common::cfg::AppCfg;
 
+#[deprecated(note = "Use ReidsUtil instead")]
 pub struct CacheKeyUtil {
     cfg: AppCfg,
 }

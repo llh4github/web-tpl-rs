@@ -5,14 +5,15 @@ pub(crate) mod rsp;
 mod util;
 
 use actix_web::middleware::Logger;
-use actix_web::{web, App, HttpServer};
+use actix_web::{App, HttpServer, web};
 use cache::create_redis_pool;
 use common::cfg::AppCfg;
 use flexi_logger::{Age, Cleanup, Criterion, Duplicate, FileSpec, Naming};
 use log::{error, info};
 use std::error::Error;
 use std::net::Ipv4Addr;
-use utoipa_actix_web::{scope, AppExt};
+use util::ReidsUtil;
+use utoipa_actix_web::{AppExt, scope};
 use utoipa_swagger_ui::SwaggerUi;
 
 #[actix_web::main]
@@ -31,8 +32,12 @@ async fn start(cfg: AppCfg) -> Result<(), Box<dyn Error>> {
         let (app, api) = App::new()
             .app_data(web::Data::new(setting))
             .app_data(web::Data::new(db_conn))
-            .app_data(web::Data::new(redis_pool))
+            .app_data(web::Data::new(redis_pool.clone()))
             .app_data(web::Data::new(util::CacheKeyUtil::new(cfg.clone())))
+            .app_data(web::Data::new(ReidsUtil::new(
+                cfg.clone(),
+                redis_pool.clone(),
+            )))
             .wrap(middleware::Jwt)
             .into_utoipa_app()
             .map(|app| app.wrap(Logger::default()))
