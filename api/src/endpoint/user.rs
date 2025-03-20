@@ -1,24 +1,20 @@
 use crate::rsp::code::DATA_NOT_FIND_ERR;
-use crate::rsp::{error_rsp, ok_rsp, ApiResponse, ApiResult, PageResult};
-use crate::util::CacheKeyUtil;
+use crate::rsp::{ApiResponse, ApiResult, PageResult, error_rsp, ok_rsp};
+use crate::util::ReidsUtil;
 use crate::{dto, rsp};
 use actix_web::{get, post, web};
-use cache::RedisConnectionManager;
-use common::cfg::AppCfg;
 use common::util::pwd_util;
 use db::entities::auth_user;
 use db::entities::prelude::AuthUser;
-use log::debug;
-use r2d2::Pool;
+use sea_orm::ActiveValue::Set;
 use sea_orm::sea_query::SimpleExpr;
 use sea_orm::sqlx::types::chrono;
-use sea_orm::ActiveValue::Set;
 use sea_orm::{
-    ActiveModelTrait, Condition, DatabaseConnection, EntityTrait, IntoActiveModel, TransactionTrait,
+    ActiveModelTrait, Condition, DatabaseConnection, EntityTrait as _, IntoActiveModel,
+    TransactionTrait,
 };
 use sea_orm::{ColumnTrait, QueryOrder};
 use sea_orm::{PaginatorTrait, QueryFilter};
-use serde_json::json;
 use utoipa_actix_web::service_config::ServiceConfig;
 use validator::Validate;
 
@@ -44,33 +40,23 @@ pub(super) fn register_api(c: &mut ServiceConfig) {
 #[get("/user/{id}")]
 pub async fn find_user(
     id: web::Path<i32>,
-    cfg: web::Data<AppCfg>,
-    cache_key_util: web::Data<CacheKeyUtil>,
+    redis_util: web::Data<ReidsUtil>,
     db_inject: web::Data<DatabaseConnection>,
-    redis_inject: web::Data<Pool<RedisConnectionManager>>,
 ) -> ApiResult<Option<auth_user::Model>> {
-    let key = cache_key_util.cache_key_i32(REDIS_KEY, *id);
-    let mut pool = redis_inject.get()?;
-    let cached: Option<String> = redis::cmd("GET").arg(&key).query(&mut pool)?;
+    let key = format!("{}:{}", REDIS_KEY, id);
+
+    let cached: Option<auth_user::Model> = redis_util.fetch_and_dejson(&key)?;
     if let Some(cached) = cached {
-        debug!("Cache found. user-id {}", *id);
-        let cached: Option<auth_user::Model> = serde_json::from_str(&cached).unwrap();
-        return ok_rsp(cached);
-    } else {
-        debug!("Cache not found, run db query. user-id {}", *id);
+        return ok_rsp(Some(cached));
     }
 
     let db = db_inject.get_ref();
     let option: Option<auth_user::Model> = AuthUser::find_by_id(*id).one(db).await?;
-    redis::cmd("SET")
-        .arg(&key)
-        .arg(json!(option).to_string())
-        .arg("EX")
-        .arg(cfg.cache.ttl)
-        .exec(&mut pool)?;
+    redis_util.cache_json_str(&key, &option)?;
 
     ok_rsp(option)
 }
+
 /// 新增用户数据
 #[utoipa::path(
     post,
