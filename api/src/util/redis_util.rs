@@ -1,11 +1,18 @@
+use std::sync::{Mutex, OnceLock};
+
 use cache::RedisConnectionManager;
 use common::cfg::AppCfg;
 use r2d2::Pool;
-use rand::Rng;
+use rand::{Rng, SeedableRng};
 use serde::Serialize;
 use serde_json::json;
 
 use crate::rsp::AppErrors;
+
+fn global_rng() -> &'static std::sync::Mutex<rand::rngs::StdRng> {
+    static RNG: OnceLock<Mutex<rand::rngs::StdRng>> = OnceLock::new();
+    RNG.get_or_init(|| Mutex::new(rand::rngs::StdRng::from_os_rng()))
+}
 
 pub struct ReidsUtil {
     cfg: AppCfg,
@@ -19,10 +26,13 @@ impl ReidsUtil {
     fn cache_key_from_str(&self, parts: &String) -> String {
         format!("{}:{}", self.cfg.cache.prefix, parts)
     }
+
     fn ttl(&self) -> i64 {
-        let ttl = self.cfg.cache.ttl;
-        let mut rng = rand::rng();
-        let ttl = ttl + rng.random_range(0..self.cfg.cache.ttl_delta);
+        let ttl = global_rng()
+            .lock()
+            .unwrap()
+            .random_range(0..self.cfg.cache.ttl_delta)
+            + self.cfg.cache.ttl;
         ttl
     }
 
