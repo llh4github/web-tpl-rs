@@ -126,10 +126,10 @@ pub async fn page_query(
     let query = AuthUser::find()
         .filter(cond)
         .order_by_desc(auth_user::Column::UpdatedAt);
-    let paginator = query.paginate(db, req.size);
+    let paginator = query.paginate(db, req.param.size);
     let total_page = paginator.num_pages().await?;
     let total_ele = paginator.num_items().await?;
-    let list: Vec<auth_user::Model> = paginator.fetch_page(req.page - 1).await?;
+    let list: Vec<auth_user::Model> = paginator.fetch_page(req.param.page - 1).await?;
     let rs = PageResult {
         total_page,
         total_ele,

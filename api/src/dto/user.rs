@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use validator_derive::Validate;
 
+use super::PageParam;
+
 /// User Login Request Dto
 #[derive(Deserialize, Serialize, Debug, ToSchema, Validate)]
 pub struct LoginReq {
@@ -37,14 +39,9 @@ pub struct PageReq {
     pub username: Option<String>,
     /// 邮箱
     pub email: Option<String>,
-    /// 页码
-    #[validate(range(min = 1))]
-    #[schema(example = 1)]
-    pub page: u64,
-    /// 每页大小
-    #[validate(range(min = 1))]
-    #[schema(example = 10)]
-    pub size: u64,
+
+    #[serde(flatten)]
+    pub param: PageParam,
 }
 /// User Update Request Dto
 #[derive(Deserialize, Serialize, Debug, ToSchema, Validate)]
