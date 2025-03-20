@@ -76,7 +76,7 @@ pub async fn add_user(
         .filter(Condition::all().add(auth_user::Column::Username.eq(req.username.clone())))
         .one(&txn)
         .await?;
-    if option.is_some() {
+    if option.is_none() {
         txn.commit().await?;
         return error_rsp(DATA_NOT_FIND_ERR, format!("Username: {}", req.username));
     }
@@ -85,7 +85,7 @@ pub async fn add_user(
         .filter(Condition::all().add(auth_user::Column::Email.eq(req.email.clone())))
         .one(&txn)
         .await?;
-    if option.is_some() {
+    if option.is_none() {
         txn.commit().await?;
         return error_rsp(DATA_NOT_FIND_ERR, format!("Email: {}", req.email));
     }
