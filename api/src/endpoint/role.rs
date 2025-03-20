@@ -1,5 +1,5 @@
 use crate::{
-    dto::RoleDto,
+    dto::{self},
     rsp::{ApiResponse, ApiResult, code::DATA_EXIST_ERR, error_rsp, ok_rsp},
     util::ReidsUtil,
 };
@@ -53,13 +53,13 @@ async fn get_role(
 #[utoipa::path(
     post,
     path = "/role",
-    request_body = RoleDto::AddReq,
+    request_body = dto::role::AddReq,
     responses((status = OK, body = ApiResponse<Option<auth_role::Model>>)),
     tag = "角色管理模块"
 )]
 #[post("/role")]
 async fn add_role(
-    req: web::Json<RoleDto::AddReq>,
+    req: web::Json<dto::role::AddReq>,
     db_inject: web::Data<DatabaseConnection>,
 ) -> ApiResult<Option<auth_role::Model>> {
     req.validate()?;
