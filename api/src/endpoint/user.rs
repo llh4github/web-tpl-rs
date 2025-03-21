@@ -1,27 +1,24 @@
 use crate::rsp::code::DATA_NOT_FIND_ERR;
 use crate::rsp::{ApiResponse, ApiResult, PageResult, error_rsp, ok_rsp};
+use crate::util::ReidsUtil;
 use crate::{dto, rsp};
 use actix_web::{get, post, web};
-use cache::RedisConnectionManager;
-use common::cfg::AppCfg;
 use common::util::pwd_util;
-use db::entities::auth_user;
-use db::entities::prelude::AuthUser;
-use log::debug;
-use r2d2::Pool;
+use db::entities::prelude::{AuthRole, AuthUser, LinkUserRole};
+use db::entities::{auth_role, auth_user, link_user_role};
 use sea_orm::ActiveValue::Set;
 use sea_orm::sea_query::SimpleExpr;
 use sea_orm::sqlx::types::chrono;
 use sea_orm::{
-    ActiveModelTrait, Condition, DatabaseConnection, EntityTrait, IntoActiveModel, TransactionTrait,
+    ActiveModelTrait, Condition, DatabaseConnection, EntityTrait as _, IntoActiveModel,
+    LoaderTrait, QuerySelect, TransactionTrait,
 };
 use sea_orm::{ColumnTrait, QueryOrder};
 use sea_orm::{PaginatorTrait, QueryFilter};
-use serde_json::json;
 use utoipa_actix_web::service_config::ServiceConfig;
 use validator::Validate;
 
-const REDIS_KEY: &str = "web-tpl:cache:user";
+const REDIS_KEY: &str = "user-module";
 
 pub(super) fn register_api(c: &mut ServiceConfig) {
     c.service(find_user);
@@ -43,33 +40,23 @@ pub(super) fn register_api(c: &mut ServiceConfig) {
 #[get("/user/{id}")]
 pub async fn find_user(
     id: web::Path<i32>,
-    cfg: web::Data<AppCfg>,
+    redis_util: web::Data<ReidsUtil>,
     db_inject: web::Data<DatabaseConnection>,
-    redis_inject: web::Data<Pool<RedisConnectionManager>>,
 ) -> ApiResult<Option<auth_user::Model>> {
-    let mut pool = redis_inject.get()?;
-    let cached: Option<String> = redis::cmd("GET")
-        .arg(format!("{}:{}", REDIS_KEY, *id))
-        .query(&mut pool)?;
+    let key = format!("{}:{}", REDIS_KEY, id);
+
+    let cached: Option<auth_user::Model> = redis_util.fetch_and_dejson(&key)?;
     if let Some(cached) = cached {
-        debug!("Cache found. user-id {}", *id);
-        let cached: Option<auth_user::Model> = serde_json::from_str(&cached).unwrap();
-        return ok_rsp(cached);
-    } else {
-        debug!("Cache not found, run db query. user-id {}", *id);
+        return ok_rsp(Some(cached));
     }
 
     let db = db_inject.get_ref();
     let option: Option<auth_user::Model> = AuthUser::find_by_id(*id).one(db).await?;
-    redis::cmd("SET")
-        .arg(format!("{}:{}", REDIS_KEY, *id))
-        .arg(json!(option).to_string())
-        .arg("EX")
-        .arg(cfg.cache.ttl)
-        .exec(&mut pool)?;
+    redis_util.cache_json_str(&key, &option)?;
 
     ok_rsp(option)
 }
+
 /// 新增用户数据
 #[utoipa::path(
     post,
@@ -89,7 +76,7 @@ pub async fn add_user(
         .filter(Condition::all().add(auth_user::Column::Username.eq(req.username.clone())))
         .one(&txn)
         .await?;
-    if option.is_some() {
+    if option.is_none() {
         txn.commit().await?;
         return error_rsp(DATA_NOT_FIND_ERR, format!("Username: {}", req.username));
     }
@@ -98,7 +85,7 @@ pub async fn add_user(
         .filter(Condition::all().add(auth_user::Column::Email.eq(req.email.clone())))
         .one(&txn)
         .await?;
-    if option.is_some() {
+    if option.is_none() {
         txn.commit().await?;
         return error_rsp(DATA_NOT_FIND_ERR, format!("Email: {}", req.email));
     }
@@ -127,8 +114,9 @@ pub async fn add_user(
 pub async fn page_query(
     req: web::Json<dto::user::PageReq>,
     db_inject: web::Data<DatabaseConnection>,
-) -> rsp::ApiResult<PageResult<auth_user::Model>> {
+) -> rsp::ApiResult<PageResult<dto::user::PageEle>> {
     let db = db_inject.get_ref();
+    let db = db.begin().await?;
     let cond = Condition::all()
         .add_option(req.username.as_ref().map_or(None::<SimpleExpr>, |v| {
             Some(auth_user::Column::Username.contains(v.clone()))
@@ -136,18 +124,50 @@ pub async fn page_query(
         .add_option(req.email.as_ref().map_or(None::<SimpleExpr>, |v| {
             Some(auth_user::Column::Email.contains(v.clone()))
         }));
+
     let query = AuthUser::find()
         .filter(cond)
-        .order_by_desc(auth_user::Column::UpdatedAt);
-    let paginator = query.paginate(db, req.size);
+        .order_by_desc(auth_user::Column::UpdatedAt)
+        .into_partial_model::<dto::user::PageEle>();
+    let paginator = query.paginate(&db, req.param.size);
     let total_page = paginator.num_pages().await?;
     let total_ele = paginator.num_items().await?;
-    let list: Vec<auth_user::Model> = paginator.fetch_page(req.page - 1).await?;
+    let mut list = paginator.fetch_page(req.param.page - 1).await?;
+    let user_ids = list.iter().map(|v| v.id).collect::<Vec<i32>>();
+    let link_data = LinkUserRole::find()
+        .filter(link_user_role::Column::UserId.is_in(user_ids))
+        .all(&db)
+        .await?;
+    let roles = AuthRole::find()
+        .filter(
+            auth_role::Column::Id.is_in(link_data.iter().map(|v| v.role_id).collect::<Vec<i32>>()),
+        )
+        .into_partial_model::<dto::user::RoleInfo>()
+        .all(&db)
+        .await?;
+
+    for ele in list.iter_mut() {
+        let role_info = roles
+            .iter()
+            .filter(|v| {
+                link_data
+                    .iter()
+                    .any(|x| x.role_id == v.id && x.user_id == ele.id)
+            })
+            .map(|v| dto::user::RoleInfo {
+                id: v.id,
+                name: v.name.clone(),
+                code: v.code.clone(),
+            })
+            .collect::<Vec<dto::user::RoleInfo>>();
+        ele.roles = role_info;
+    }
     let rs = PageResult {
         total_page,
         total_ele,
         data: list,
     };
+    db.commit().await?;
     ok_rsp(rs)
 }
 /// 更新用户密码

@@ -29,6 +29,7 @@ r2d2 = { workspace = true }
 bcrypt = { workspace = true }
 log = { workspace = true }
 flexi_logger = { workspace = true }
+rand = { workspace = true }
 #slog = { workspace = true }
 #slog-async = { workspace = true }
 #slog-term = {workspace = true}

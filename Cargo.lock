@@ -285,6 +285,7 @@ dependencies = [
  "log",
  "matchit",
  "r2d2",
+ "rand 0.9.0",
  "redis",
  "sea-orm",
  "serde",

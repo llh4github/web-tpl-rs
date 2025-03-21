@@ -16,7 +16,7 @@ pub enum AppErrors {
     /// Jwt 创建出错
     #[error(transparent)]
     JwtCreateErr(#[from] jsonwebtoken::errors::Error),
-    
+
     #[error(transparent)]
     PoolErr(#[from] r2d2::Error),
 
@@ -24,4 +24,6 @@ pub enum AppErrors {
     #[error(transparent)]
     RedisErr(#[from] RedisError),
 
+    #[error(transparent)]
+    SerdeJsonErr(#[from] serde_json::Error),
 }

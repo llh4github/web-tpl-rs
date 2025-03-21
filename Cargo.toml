@@ -60,3 +60,4 @@ r2d2 = { version = "0.8.10" }
 bcrypt = "0.17"
 
 jsonwebtoken = "9.3.1"
+rand = "0.9"

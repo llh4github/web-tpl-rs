@@ -1,7 +1,7 @@
 use cache::RedisConnectionManager;
 use chrono::Utc;
 use common::cfg;
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use r2d2::PooledConnection;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +9,7 @@ use crate::rsp::AppErrors;
 
 const KEY_INFIX: &str = "jwt";
 
-pub fn parse_token(cfg: &cfg::Jwt, token: String) -> Result<Claims, jsonwebtoken::errors::Error> {
+fn parse_token(cfg: &cfg::Jwt, token: String) -> Result<Claims, jsonwebtoken::errors::Error> {
     let secret = cfg.secret.as_bytes();
     // `token` is a struct with 2 fields: `header` and `claims` where `claims` is your own struct.
     let token = decode::<Claims>(
@@ -34,7 +34,7 @@ fn create_token_with_claims(
 }
 
 /// 验证token 
-pub fn validat_token(
+pub fn validate_token(
     redis_pool: &mut PooledConnection<RedisConnectionManager>,
     cache: &cfg::Cache,
     jwt: &cfg::Jwt,
