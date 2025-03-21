@@ -1,3 +1,5 @@
+use sea_orm::prelude::DateTime;
+use sea_orm::{DerivePartialModel, FromQueryResult};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use validator_derive::Validate;
@@ -51,4 +53,26 @@ pub struct UpdatePwd {
 
     #[validate(length(min = 1, max = 20))]
     pub password: String,
+}
+
+/// 分页查询返回数据
+#[derive(Deserialize, Serialize, Debug, ToSchema, DerivePartialModel, FromQueryResult)]
+#[sea_orm(entity = "db::entities::auth_user::Entity")]
+pub struct PageEle {
+    #[sea_orm(primary_key)]
+    pub id: i32,
+    pub username: String,
+    pub email: String,
+    pub created_at: Option<DateTime>,
+    pub updated_at: Option<DateTime>,
+    #[sea_orm(skip)]
+    pub roles: Vec<RoleInfo>,
+}
+
+#[derive(Deserialize, Serialize, Debug, ToSchema, DerivePartialModel, FromQueryResult)]
+#[sea_orm(entity = "db::entities::auth_role::Entity")]
+pub struct RoleInfo {
+    pub id: i32,
+    pub name: String,
+    pub code: String,
 }

@@ -4,14 +4,14 @@ use crate::util::ReidsUtil;
 use crate::{dto, rsp};
 use actix_web::{get, post, web};
 use common::util::pwd_util;
-use db::entities::auth_user;
-use db::entities::prelude::AuthUser;
+use db::entities::prelude::{AuthRole, AuthUser, LinkUserRole};
+use db::entities::{auth_role, auth_user, link_user_role};
 use sea_orm::ActiveValue::Set;
 use sea_orm::sea_query::SimpleExpr;
 use sea_orm::sqlx::types::chrono;
 use sea_orm::{
     ActiveModelTrait, Condition, DatabaseConnection, EntityTrait as _, IntoActiveModel,
-    TransactionTrait,
+    LoaderTrait, QuerySelect, TransactionTrait,
 };
 use sea_orm::{ColumnTrait, QueryOrder};
 use sea_orm::{PaginatorTrait, QueryFilter};
@@ -114,8 +114,9 @@ pub async fn add_user(
 pub async fn page_query(
     req: web::Json<dto::user::PageReq>,
     db_inject: web::Data<DatabaseConnection>,
-) -> rsp::ApiResult<PageResult<auth_user::Model>> {
+) -> rsp::ApiResult<PageResult<dto::user::PageEle>> {
     let db = db_inject.get_ref();
+    let db = db.begin().await?;
     let cond = Condition::all()
         .add_option(req.username.as_ref().map_or(None::<SimpleExpr>, |v| {
             Some(auth_user::Column::Username.contains(v.clone()))
@@ -123,18 +124,50 @@ pub async fn page_query(
         .add_option(req.email.as_ref().map_or(None::<SimpleExpr>, |v| {
             Some(auth_user::Column::Email.contains(v.clone()))
         }));
+
     let query = AuthUser::find()
         .filter(cond)
-        .order_by_desc(auth_user::Column::UpdatedAt);
-    let paginator = query.paginate(db, req.param.size);
+        .order_by_desc(auth_user::Column::UpdatedAt)
+        .into_partial_model::<dto::user::PageEle>();
+    let paginator = query.paginate(&db, req.param.size);
     let total_page = paginator.num_pages().await?;
     let total_ele = paginator.num_items().await?;
-    let list: Vec<auth_user::Model> = paginator.fetch_page(req.param.page - 1).await?;
+    let mut list = paginator.fetch_page(req.param.page - 1).await?;
+    let user_ids = list.iter().map(|v| v.id).collect::<Vec<i32>>();
+    let link_data = LinkUserRole::find()
+        .filter(link_user_role::Column::UserId.is_in(user_ids))
+        .all(&db)
+        .await?;
+    let roles = AuthRole::find()
+        .filter(
+            auth_role::Column::Id.is_in(link_data.iter().map(|v| v.role_id).collect::<Vec<i32>>()),
+        )
+        .into_partial_model::<dto::user::RoleInfo>()
+        .all(&db)
+        .await?;
+
+    for ele in list.iter_mut() {
+        let role_info = roles
+            .iter()
+            .filter(|v| {
+                link_data
+                    .iter()
+                    .any(|x| x.role_id == v.id && x.user_id == ele.id)
+            })
+            .map(|v| dto::user::RoleInfo {
+                id: v.id,
+                name: v.name.clone(),
+                code: v.code.clone(),
+            })
+            .collect::<Vec<dto::user::RoleInfo>>();
+        ele.roles = role_info;
+    }
     let rs = PageResult {
         total_page,
         total_ele,
         data: list,
     };
+    db.commit().await?;
     ok_rsp(rs)
 }
 /// 更新用户密码
